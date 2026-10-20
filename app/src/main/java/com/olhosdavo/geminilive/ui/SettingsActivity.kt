@@ -1,4 +1,4 @@
-package com.olhosdavo.geminilive
+package com.olhosdavo.geminilive.ui
 
 import android.content.Intent
 import android.graphics.Color
@@ -11,8 +11,14 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.olhosdavo.geminilive.R
+import com.olhosdavo.geminilive.data.PrefsManager
+import com.olhosdavo.geminilive.service.GeminiLiveAccessibilityService
 import java.util.Locale
 
+/**
+ * Painel de Configuração da Família (protegido por toque longo no canto superior direito).
+ */
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var prefs: PrefsManager
@@ -47,7 +53,6 @@ class SettingsActivity : AppCompatActivity() {
         val btnTestNow = findViewById<Button>(R.id.btnTestNow)
         val btnCloseSettings = findViewById<Button>(R.id.btnCloseSettings)
 
-        // Carrega estados salvos
         cbAutoLaunchOnOpen.isChecked = prefs.autoLaunchOnOpen
         cbVoiceFeedback.isChecked = prefs.voiceFeedback
         cbUseCoordinateFallback.isChecked = prefs.useCoordinateFallback

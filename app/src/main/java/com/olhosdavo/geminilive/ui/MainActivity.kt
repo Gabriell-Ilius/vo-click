@@ -1,27 +1,27 @@
-package com.olhosdavo.geminilive
+package com.olhosdavo.geminilive.ui
 
-import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
-import android.speech.tts.TextToSpeech
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.util.Locale
+import com.olhosdavo.geminilive.R
+import com.olhosdavo.geminilive.data.PrefsManager
+import com.olhosdavo.geminilive.service.GeminiLiveAccessibilityService
+import com.olhosdavo.geminilive.util.FeedbackHelper
 
-class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+/**
+ * Tela Principal (Alto Contraste Preto/Amarelo):
+ * Transforma 100% da tela do celular em um único botão gigante para a avó.
+ */
+class MainActivity : AppCompatActivity() {
 
     private lateinit var prefs: PrefsManager
-    private var tts: TextToSpeech? = null
-    private var isTtsReady = false
+    private lateinit var feedbackHelper: FeedbackHelper
     private val handler = Handler(Looper.getMainLooper())
     private var lastTriggerTime: Long = 0L
 
@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setContentView(R.layout.activity_main)
 
         prefs = PrefsManager(this)
-        tts = TextToSpeech(this, this)
+        feedbackHelper = FeedbackHelper(this)
 
         btnGiantStart = findViewById(R.id.btnGiantStart)
         tvStatusBanner = findViewById(R.id.tvStatusBanner)
@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         // Apenas SEGURAR (toque longo) no botão do canto abre as Configurações da Família
         btnFamilySettings.setOnLongClickListener {
-            vibrateShort()
+            FeedbackHelper.vibrateShort(this)
             startActivity(Intent(this, SettingsActivity::class.java))
             true
         }
@@ -74,10 +74,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun onGiantButtonTapped() {
-        vibrateShort()
+        FeedbackHelper.vibrateShort(this)
 
         if (!GeminiLiveAccessibilityService.isServiceEnabled(this)) {
-            speakOut("Peça para alguém da família ativar a permissão de acessibilidade na primeira vez.")
+            feedbackHelper.speak(
+                "Peça para alguém da família ativar a permissão de acessibilidade na primeira vez."
+            )
             startActivity(Intent(this, SettingsActivity::class.java))
             return
         }
@@ -89,13 +91,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         lastTriggerTime = System.currentTimeMillis()
 
         if (prefs.voiceFeedback) {
-            speakOut("Abrindo câmera do Gemini, aguarde.")
+            feedbackHelper.speak("Abrindo câmera do Gemini, aguarde.")
         }
 
         val service = GeminiLiveAccessibilityService.instance
         if (service != null) {
-            // Se a voz estiver ativa, dá 600ms para o início do aviso sonoro antes de trocar de app
-            val delay = if (prefs.voiceFeedback && isTtsReady) 600L else 100L
+            val delay = if (prefs.voiceFeedback && feedbackHelper.isTtsReady) 600L else 100L
             handler.postDelayed({
                 service.startAutomationSession()
             }, delay)
@@ -109,42 +110,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            val result = tts?.setLanguage(Locale("pt", "BR"))
-            isTtsReady = result != TextToSpeech.LANG_MISSING_DATA &&
-                result != TextToSpeech.LANG_NOT_SUPPORTED
-        }
-    }
-
-    private fun speakOut(message: String) {
-        if (isTtsReady) {
-            tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "olhos_da_vo_tts")
-        }
-    }
-
-    private fun vibrateShort() {
-        try {
-            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vm = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                vm.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(90L, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(90L)
-            }
-        } catch (_: Exception) {
-        }
-    }
-
     override fun onDestroy() {
-        tts?.stop()
-        tts?.shutdown()
+        feedbackHelper.shutdown()
         super.onDestroy()
     }
 }

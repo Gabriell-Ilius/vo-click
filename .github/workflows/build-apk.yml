@@ -22,17 +22,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Configurar Gradle
+      - name: Configurar Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
       - name: Compilar APK
         run: |
-          gradle assembleDebug
+          gradle assembleDebug --no-daemon
           cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo.apk
 
       - name: Disponibilizar APK nos Artifacts
@@ -41,7 +38,7 @@ jobs:
           name: OlhosDaVo-APK
           path: OlhosDaVo.apk
 
-      - name: Publicar APK na aba Releases (Download direto no celular sem precisar descompactar)
+      - name: Publicar APK na aba Releases (Download direto no celular)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}

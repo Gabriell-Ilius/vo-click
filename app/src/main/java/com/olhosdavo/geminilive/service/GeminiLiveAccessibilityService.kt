@@ -1,26 +1,28 @@
-package com.olhosdavo.geminilive
+package com.olhosdavo.geminilive.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.graphics.Path
 import android.graphics.Rect
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.Toast
+import com.olhosdavo.geminilive.data.PrefsManager
+import com.olhosdavo.geminilive.util.FeedbackHelper
+import com.olhosdavo.geminilive.util.GeminiLauncher
 import java.text.Normalizer
 import java.util.Locale
 
+/**
+ * Serviço de Acessibilidade que automatiza a abertura do Gemini Live com Câmera em 2 etapas:
+ * - Etapa 1 (STEP_1_OPEN_LIVE): Localiza e clica no botão "Live" no app oficial do Gemini.
+ * - Etapa 2 (STEP_2_OPEN_CAMERA): Aguarda o modo Live iniciar e clica em "Ativar câmera".
+ */
 class GeminiLiveAccessibilityService : AccessibilityService() {
 
     private enum class Phase {
@@ -86,7 +88,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         sessionStartTime = System.currentTimeMillis()
         liveClickedTime = 0L
 
-        launchOfficialGeminiApp()
+        GeminiLauncher.launchOfficialGemini(this)
 
         // Inicia verificação periódica a cada 350ms após 700ms da abertura do Gemini
         handler.postDelayed(pollRunnable, 700L)
@@ -101,7 +103,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         val rootNodes = getAllRootNodes()
         if (rootNodes.isEmpty()) return
 
-        // Verifica se estamos ainda na tela do nosso próprio app (aguarda o Gemini abrir)
+        // Aguarda sair da tela do nosso próprio aplicativo antes de procurar botões
         val firstPkg = rootNodes.firstOrNull()?.packageName?.toString() ?: ""
         if (firstPkg == packageName && (now - sessionStartTime) < 1800L) {
             return
@@ -150,7 +152,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
                     excludeKeywords = emptyList()
                 )
                 if (alreadyOnNode != null) {
-                    vibrateSuccess()
+                    FeedbackHelper.vibrateCameraReady(this)
                     stopAutomation()
                     return
                 }
@@ -164,7 +166,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
 
                 if (cameraNode != null) {
                     clickNodeOrTapBounds(cameraNode)
-                    vibrateSuccess()
+                    FeedbackHelper.vibrateCameraReady(this)
                     stopAutomation()
                     return
                 }
@@ -172,7 +174,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
                 // 2) Fallback por coordenada após o tempo configurado (ex: 2.2s após abrir o Live)
                 if (prefs.useCoordinateFallback && elapsedSinceLive >= prefs.cameraDelayMs) {
                     tapScreenPercent(prefs.cameraButtonXPercent, prefs.cameraButtonYPercent)
-                    vibrateSuccess()
+                    FeedbackHelper.vibrateCameraReady(this)
                     stopAutomation()
                 }
             }
@@ -256,7 +258,6 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
     }
 
     private fun clickNodeOrTapBounds(node: AccessibilityNodeInfo) {
-        // Tenta clicar no próprio nó ou em algum pai clicável
         var current: AccessibilityNodeInfo? = node
         var clicked = false
         var depth = 0
@@ -269,7 +270,6 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             depth++
         }
 
-        // Também executa toque físico simulado no centro do botão caso seja um componente Compose
         val rect = Rect()
         node.getBoundsInScreen(rect)
         if (!clicked && !rect.isEmpty && rect.centerX() > 0 && rect.centerY() > 0) {
@@ -293,71 +293,6 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             .addStroke(stroke)
             .build()
         dispatchGesture(gesture, null, null)
-    }
-
-    private fun launchOfficialGeminiApp() {
-        val pm = packageManager
-
-        // 1. Tenta abrir o app oficial do Google Gemini (com.google.android.apps.bard)
-        val bardIntent = pm.getLaunchIntentForPackage("com.google.android.apps.bard")
-        if (bardIntent != null) {
-            bardIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(bardIntent)
-            return
-        }
-
-        // 2. Tenta abrir o Assistente Digital padrão (quando o Gemini é o assistente do Android)
-        val assistIntent = Intent(Intent.ACTION_ASSIST).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        if (assistIntent.resolveActivity(pm) != null) {
-            startActivity(assistIntent)
-            return
-        }
-
-        // 3. Fallback para Comando de Voz / App do Google
-        val voiceIntent = Intent(Intent.ACTION_VOICE_COMMAND).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        if (voiceIntent.resolveActivity(pm) != null) {
-            startActivity(voiceIntent)
-            return
-        }
-
-        val googleAppIntent = pm.getLaunchIntentForPackage("com.google.android.googlequicksearchbox")
-        if (googleAppIntent != null) {
-            googleAppIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(googleAppIntent)
-            return
-        }
-
-        Toast.makeText(
-            this,
-            "Instale o aplicativo Google Gemini na Play Store.",
-            Toast.LENGTH_LONG
-        ).show()
-    }
-
-    private fun vibrateSuccess() {
-        try {
-            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vm = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                vm.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // Vibração dupla curta confirmando que a câmera do Live abriu
-                vibrator.vibrate(
-                    VibrationEffect.createWaveform(longArrayOf(0, 120, 100, 180), -1)
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(300)
-            }
-        } catch (_: Exception) {
-        }
     }
 
     private fun normalizeText(input: String?): String {
@@ -410,7 +345,8 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         )
 
         fun isServiceEnabled(context: Context): Boolean {
-            val expectedComponentName = ComponentName(context, GeminiLiveAccessibilityService::class.java)
+            val expectedComponentName =
+                ComponentName(context, GeminiLiveAccessibilityService::class.java)
             val enabledServicesSetting = Settings.Secure.getString(
                 context.contentResolver,
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
