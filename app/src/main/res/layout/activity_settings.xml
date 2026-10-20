@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Configurações da Família"
+            android:textColor="#FFD600"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Configure aqui uma única vez para deixar tudo pronto para a sua avó."
+            android:textColor="#CCCCCC"
+            android:textSize="15sp" />
+
+        <!-- PASSO 1: SERVIÇO DE ACESSIBILIDADE -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="#1E1E1E"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tvServiceStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1. Serviço de Acessibilidade: DESATIVADO"
+                android:textColor="#FF5252"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="O serviço permite que o app clique sozinho no botão 'Live' e no botão 'Câmera' dentro do aplicativo oficial do Gemini.\n\n💡 Dica Android 13+: Se o Android mostrar 'Configuração restrita', toque no botão abaixo 'Abrir Dados do App', vá nos 3 pontinhos (⋮) no canto superior direito e toque em 'Permitir configurações restritas'."
+                android:textColor="#BDBDBD"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btnOpenAccessibility"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:backgroundTint="#FFD600"
+                android:padding="12dp"
+                android:text="Abrir Configurações de Acessibilidade"
+                android:textColor="#000000"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnOpenAppDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="#333333"
+                android:text="Abrir Dados do App (Liberar Config. Restrita)"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <!-- PASSO 2: COMPORTAMENTO PARA A AVÓ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="#1E1E1E"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="2. Modo de Abertura e Voz"
+                android:textColor="#FFD600"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <CheckBox
+                android:id="@+id/cbAutoLaunchOnOpen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Iniciar direto ao abrir o ícone do app (0 cliques extras)"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+
+            <CheckBox
+                android:id="@+id/cbVoiceFeedback"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:checked="true"
+                android:text="Avisar por voz quando estiver abrindo a câmera"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- PASSO 3: AJUSTE FINO / FALLBACK DE COORDENADAS -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="#1E1E1E"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="3. Clique por Posição na Tela (Fallback)"
+                android:textColor="#FFD600"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="O app procura os botões 'Live' e 'Câmera' pelo nome automaticamente. Se no modelo de celular dela algum botão não tiver texto acessível, o app toca na posição (X%, Y%) configurada abaixo:"
+                android:textColor="#BDBDBD"
+                android:textSize="14sp" />
+
+            <CheckBox
+                android:id="@+id/cbUseCoordinateFallback"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:checked="true"
+                android:text="Usar toque por posição se o botão não for achado por texto"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp" />
+
+            <!-- Posição do Botão LIVE (Padrão: canto inferior direito da barra do Gemini: X=88%, Y=91%) -->
+            <TextView
+                android:id="@+id/tvLiveCoordsLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Posição do botão LIVE (X: 88%, Y: 91%)"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <SeekBar
+                android:id="@+id/sbLiveX"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="88" />
+
+            <SeekBar
+                android:id="@+id/sbLiveY"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="91" />
+
+            <!-- Posição do Botão CÂMERA dentro do Live (Padrão: botão esquerdo/central na barra do Live: X=22%, Y=89%) -->
+            <TextView
+                android:id="@+id/tvCameraCoordsLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Posição do botão CÂMERA no Live (X: 22%, Y: 89%)"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <SeekBar
+                android:id="@+id/sbCameraX"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="22" />
+
+            <SeekBar
+                android:id="@+id/sbCameraY"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="89" />
+
+            <!-- Tempo de espera entre abrir o Live e clicar na Câmera -->
+            <TextView
+                android:id="@+id/tvDelayLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Tempo de espera para abrir a câmera: 2.2 segundos"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <SeekBar
+                android:id="@+id/sbCameraDelay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="50"
+                android:progress="22" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnTestNow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:backgroundTint="#00C853"
+            android:padding="14dp"
+            android:text="▶ TESTAR AUTOMAÇÃO AGORA"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnCloseSettings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#424242"
+            android:padding="12dp"
+            android:text="Voltar para a Tela da Avó"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
+</ScrollView>

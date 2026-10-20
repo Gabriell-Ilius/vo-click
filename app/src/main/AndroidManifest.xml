@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Necessário no Android 11+ para abrir o app oficial do Gemini e usar voz (TTS) -->
+    <queries>
+        <package android:name="com.google.android.apps.bard" />
+        <package android:name="com.google.android.googlequicksearchbox" />
+        <intent>
+            <action android:name="android.intent.action.ASSIST" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VOICE_COMMAND" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:roundIcon="@drawable/ic_launcher_foreground"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.OlhosDaVo">
+
+        <!-- Tela Principal: Botão Gigante 1-Clique (ou disparo automático ao abrir) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Tela de Configurações para a Família (protegida por toque longo) -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings_title"
+            android:screenOrientation="portrait" />
+
+        <!-- Serviço de Acessibilidade que clica no botão Live e no botão Câmera do Gemini -->
+        <service
+            android:name=".GeminiLiveAccessibilityService"
+            android:exported="false"
+            android:label="@string/accessibility_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+    </application>
+
+</manifest>
