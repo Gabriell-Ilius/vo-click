@@ -30,23 +30,24 @@ jobs:
       - name: Compilar APK
         run: |
           gradle assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.6.apk
+          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.7.apk
 
       - name: Disponibilizar APK nos Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OlhosDaVo-APK
-          path: OlhosDaVo-v1.6.apk
+          path: OlhosDaVo-v1.7.apk
 
       - name: Publicar APK na aba Releases (Download direto no celular)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.6.${{ github.run_number }}
-          name: "Olhos da Vó v1.6 - Ícone do Olho + Clique Único na Câmera (Build #${{ github.run_number }})"
+          tag_name: v1.7.${{ github.run_number }}
+          name: "Olhos da Vó v1.7 - Calibrador Visual Garantido + Pulso de Clique (Build #${{ github.run_number }})"
           body: |
-            ### 📱 Download Direto para o Celular (`OlhosDaVo-v1.6.apk`)
-            Toque em **`OlhosDaVo-v1.6.apk`** abaixo em **Assets** para baixar e instalar.
-            - **👁️ Ícone Original do Olho Amarelo restaurado** no app, na tela principal e no Widget 2x2.
-            - **📷 Abertura da Câmera (baseada na v1.3, com parada imediata após o 1º clique):** Localiza o botão da câmera na árvore da tela, toca no centro exato dele 1 única vez e encerra na hora para a câmera continuar aberta!
-          files: OlhosDaVo-v1.6.apk
+            ### 📱 Download Direto para o Celular (`OlhosDaVo-v1.7.apk`)
+            Toque em **`OlhosDaVo-v1.7.apk`** abaixo em **Assets** para baixar e instalar.
+            - **🎯 Seleção Visual dos Cliques 1 e 2 com Gravação Síncrona (`commit()`):** Mostra as coordenadas X,Y mudando em tempo real enquanto você arrasta as bolinhas e confirma os valores guardados na tela.
+            - **🟢 Pulso Verde no Momento do Clique:** Pisca um círculo verde exatamente onde o app está tocando para você ver o Clique 1 e o Clique 2 acontecendo na tela!
+            - **⏱️ Espera de 4.0s para o Gemini Live conectar** antes de dar o Clique 2 na câmera.
+          files: OlhosDaVo-v1.7.apk
           prerelease: false

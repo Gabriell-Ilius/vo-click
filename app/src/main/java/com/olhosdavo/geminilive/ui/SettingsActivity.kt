@@ -17,13 +17,11 @@ import com.olhosdavo.geminilive.data.PrefsManager
 import com.olhosdavo.geminilive.service.GeminiLiveAccessibilityService
 import java.util.Locale
 
-/**
- * Painel de Configuração com Design Material 3 e Acionamento por Comando Virtual.
- */
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var prefs: PrefsManager
     private lateinit var tvServiceStatus: TextView
+    private lateinit var tvCalibrationStatus: TextView
     private lateinit var tvDelayLabel: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,10 +31,12 @@ class SettingsActivity : AppCompatActivity() {
         prefs = PrefsManager(this)
 
         tvServiceStatus = findViewById(R.id.tvServiceStatus)
+        tvCalibrationStatus = findViewById(R.id.tvCalibrationStatus)
         tvDelayLabel = findViewById(R.id.tvDelayLabel)
 
         val btnOpenAccessibility = findViewById<Button>(R.id.btnOpenAccessibility)
         val btnOpenAppDetails = findViewById<Button>(R.id.btnOpenAppDetails)
+        val btnVisualCalibrate = findViewById<Button>(R.id.btnVisualCalibrate)
         val btnDelayMinus = findViewById<Button>(R.id.btnDelayMinus)
         val btnDelayPlus = findViewById<Button>(R.id.btnDelayPlus)
         val btnPinWidget = findViewById<Button>(R.id.btnPinWidget)
@@ -63,13 +63,26 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        btnVisualCalibrate.setOnClickListener {
+            val service = GeminiLiveAccessibilityService.instance
+            if (!GeminiLiveAccessibilityService.isServiceEnabled(this) || service == null) {
+                Toast.makeText(
+                    this,
+                    "Ative primeiro o Serviço de Acessibilidade no Card 1!",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@setOnClickListener
+            }
+            service.startVisualCalibrationMode()
+        }
+
         btnDelayMinus.setOnClickListener {
-            prefs.cameraDelayTenths = (prefs.cameraDelayTenths - 3).coerceIn(15, 60)
+            prefs.cameraDelayTenths = (prefs.cameraDelayTenths - 5).coerceIn(15, 80)
             updateStatusLabels()
         }
 
         btnDelayPlus.setOnClickListener {
-            prefs.cameraDelayTenths = (prefs.cameraDelayTenths + 3).coerceIn(15, 60)
+            prefs.cameraDelayTenths = (prefs.cameraDelayTenths + 5).coerceIn(15, 80)
             updateStatusLabels()
         }
 
@@ -115,6 +128,8 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Recarrega do disco toda vez que volta para a tela para mostrar as coordenadas recém-salvas
+        prefs = PrefsManager(this)
         updateStatusLabels()
     }
 
@@ -128,10 +143,20 @@ class SettingsActivity : AppCompatActivity() {
             tvServiceStatus.setTextColor(Color.parseColor("#F87171"))
         }
 
+        if (prefs.hasVisualCalibration && prefs.liveButtonXPx > 0 && prefs.cameraButtonXPx > 0) {
+            tvCalibrationStatus.text =
+                "✅ POSIÇÕES GUARDADAS:\n• Clique 1 (Live): X=${prefs.liveButtonXPx}, Y=${prefs.liveButtonYPx}\n• Clique 2 (Câmera): X=${prefs.cameraButtonXPx}, Y=${prefs.cameraButtonYPx}"
+            tvCalibrationStatus.setTextColor(Color.parseColor("#4ADE80"))
+        } else {
+            tvCalibrationStatus.text =
+                "⚠️ Ainda não calibrado: Toque no botão azul abaixo para marcar onde ficam os 2 botões!"
+            tvCalibrationStatus.setTextColor(Color.parseColor("#FBBF24"))
+        }
+
         val seconds = prefs.cameraDelayTenths / 10.0
         tvDelayLabel.text = String.format(
             Locale.getDefault(),
-            "Aguardar conexão do Live: %.1fs",
+            "Tempo entre Clique 1 e 2: %.1fs",
             seconds
         )
     }
