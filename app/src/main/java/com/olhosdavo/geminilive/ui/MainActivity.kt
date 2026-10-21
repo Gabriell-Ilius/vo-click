@@ -16,7 +16,8 @@ import com.olhosdavo.geminilive.util.FeedbackHelper
 
 /**
  * Tela Principal (Alto Contraste Preto/Amarelo):
- * Transforma 100% da tela do celular em um único botão gigante para a avó.
+ * Transforma 100% da tela do celular em um único botão gigante para a avó,
+ * e também recebe o disparo direto quando ela toca no Widget 2x2 na tela inicial.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -24,6 +25,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var feedbackHelper: FeedbackHelper
     private val handler = Handler(Looper.getMainLooper())
     private var lastTriggerTime: Long = 0L
+    private var launchedFromWidget: Boolean = false
 
     private lateinit var btnGiantStart: LinearLayout
     private lateinit var tvStatusBanner: TextView
@@ -39,6 +41,8 @@ class MainActivity : AppCompatActivity() {
         btnGiantStart = findViewById(R.id.btnGiantStart)
         tvStatusBanner = findViewById(R.id.tvStatusBanner)
         btnFamilySettings = findViewById(R.id.btnFamilySettings)
+
+        checkWidgetIntent(intent)
 
         // Toque em qualquer lugar do botão gigante inicia o Gemini Live + Câmera
         btnGiantStart.setOnClickListener {
@@ -58,10 +62,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        checkWidgetIntent(intent)
+    }
+
+    private fun checkWidgetIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(OlhosDaVoWidgetProvider.EXTRA_FROM_WIDGET, false) == true) {
+            launchedFromWidget = true
+            intent.removeExtra(OlhosDaVoWidgetProvider.EXTRA_FROM_WIDGET)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         val enabled = GeminiLiveAccessibilityService.isServiceEnabled(this)
         tvStatusBanner.visibility = if (enabled) View.GONE else View.VISIBLE
+
+        // Se ela clicou no Widget 2x2 na tela inicial, já dispara direto!
+        if (launchedFromWidget) {
+            launchedFromWidget = false
+            handler.postDelayed({
+                onGiantButtonTapped()
+            }, 150L)
+            return
+        }
 
         // Se o modo "0 cliques" (Iniciar direto ao abrir o ícone) estiver ativo
         val now = System.currentTimeMillis()
@@ -96,7 +122,7 @@ class MainActivity : AppCompatActivity() {
 
         val service = GeminiLiveAccessibilityService.instance
         if (service != null) {
-            val delay = if (prefs.voiceFeedback && feedbackHelper.isTtsReady) 600L else 100L
+            val delay = if (prefs.voiceFeedback) 550L else 100L
             handler.postDelayed({
                 service.startAutomationSession()
             }, delay)

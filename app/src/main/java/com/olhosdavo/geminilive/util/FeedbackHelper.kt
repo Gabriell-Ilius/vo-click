@@ -11,29 +11,41 @@ import java.util.Locale
 /**
  * Centraliza os recursos de acessibilidade sensorial:
  * - Vibração tátil (toque curto de confirmação e vibração dupla quando a câmera abre)
- * - Síntese de voz (TTS em Português do Brasil)
+ * - Síntese de voz (TTS em Português do Brasil, incluindo fila se chamado durante o boot do app)
  */
-class FeedbackHelper(private val context: Context) : TextToSpeech.OnInitListener {
+class FeedbackHelper(context: Context) : TextToSpeech.OnInitListener {
 
     private var tts: TextToSpeech? = TextToSpeech(context.applicationContext, this)
     var isTtsReady: Boolean = false
         private set
+
+    private var pendingMessage: String? = null
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             val result = tts?.setLanguage(Locale("pt", "BR"))
             isTtsReady = result != TextToSpeech.LANG_MISSING_DATA &&
                 result != TextToSpeech.LANG_NOT_SUPPORTED
+
+            if (isTtsReady) {
+                pendingMessage?.let { msg ->
+                    pendingMessage = null
+                    tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, "olhos_da_vo_tts")
+                }
+            }
         }
     }
 
     fun speak(message: String) {
         if (isTtsReady) {
             tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "olhos_da_vo_tts")
+        } else {
+            pendingMessage = message
         }
     }
 
     fun shutdown() {
+        pendingMessage = null
         tts?.stop()
         tts?.shutdown()
         tts = null

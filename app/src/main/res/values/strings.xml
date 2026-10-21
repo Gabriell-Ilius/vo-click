@@ -4,4 +4,5 @@
     <string name="settings_title">Configurações da Família</string>
     <string name="accessibility_service_label">Olhos da Vó (Atalho Gemini Live)</string>
     <string name="accessibility_service_description">Permite que o aplicativo Olhos da Vó clique automaticamente no botão do Gemini Live e ligue a câmera para auxiliar pessoa com baixa visão.</string>
+    <string name="widget_description">Botão grande (2x2 ou maior) na tela inicial para abrir o Gemini Live com câmera em 1 toque.</string>
 </resources>

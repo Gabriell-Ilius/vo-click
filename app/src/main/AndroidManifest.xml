@@ -59,6 +59,19 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
+        <!-- Widget Grande (2x2 = 4 espaços, ou redimensionável) para a Tela Inicial -->
+        <receiver
+            android:name=".ui.OlhosDaVoWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_olhos_da_vo_info" />
+        </receiver>
+
     </application>
 
 </manifest>
