@@ -30,24 +30,22 @@ jobs:
       - name: Compilar APK
         run: |
           gradle assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.7.apk
+          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.8.apk
 
       - name: Disponibilizar APK nos Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OlhosDaVo-APK
-          path: OlhosDaVo-v1.7.apk
+          path: OlhosDaVo-v1.8.apk
 
       - name: Publicar APK na aba Releases (Download direto no celular)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.7.${{ github.run_number }}
-          name: "Olhos da Vó v1.7 - Calibrador Visual Garantido + Pulso de Clique (Build #${{ github.run_number }})"
+          tag_name: v1.8.${{ github.run_number }}
+          name: "Olhos da Vó v1.8 - Controle de Tempo dos Cliques 1 e 2 (Build #${{ github.run_number }})"
           body: |
-            ### 📱 Download Direto para o Celular (`OlhosDaVo-v1.7.apk`)
-            Toque em **`OlhosDaVo-v1.7.apk`** abaixo em **Assets** para baixar e instalar.
-            - **🎯 Seleção Visual dos Cliques 1 e 2 com Gravação Síncrona (`commit()`):** Mostra as coordenadas X,Y mudando em tempo real enquanto você arrasta as bolinhas e confirma os valores guardados na tela.
-            - **🟢 Pulso Verde no Momento do Clique:** Pisca um círculo verde exatamente onde o app está tocando para você ver o Clique 1 e o Clique 2 acontecendo na tela!
-            - **⏱️ Espera de 4.0s para o Gemini Live conectar** antes de dar o Clique 2 na câmera.
-          files: OlhosDaVo-v1.7.apk
+            ### 📱 Download Direto para o Celular (`OlhosDaVo-v1.8.apk`)
+            Toque em **`OlhosDaVo-v1.8.apk`** abaixo em **Assets** para baixar e atualizar.
+            - **⏱️ Tempos Mais Calmos por Padrão (3.0s e 5.5s):** Ignora o tempo antigo de 2.2s que tinha ficado salvo na memória do celular e permite ajustar separadamente a **Espera até o Clique 1 (Live)** e a **Espera até o Clique 2 (Câmera)** com botões `−` e `+`.
+          files: OlhosDaVo-v1.8.apk
           prerelease: false

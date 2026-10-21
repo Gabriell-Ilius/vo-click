@@ -22,6 +22,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var prefs: PrefsManager
     private lateinit var tvServiceStatus: TextView
     private lateinit var tvCalibrationStatus: TextView
+    private lateinit var tvLiveDelayLabel: TextView
     private lateinit var tvDelayLabel: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,11 +33,14 @@ class SettingsActivity : AppCompatActivity() {
 
         tvServiceStatus = findViewById(R.id.tvServiceStatus)
         tvCalibrationStatus = findViewById(R.id.tvCalibrationStatus)
+        tvLiveDelayLabel = findViewById(R.id.tvLiveDelayLabel)
         tvDelayLabel = findViewById(R.id.tvDelayLabel)
 
         val btnOpenAccessibility = findViewById<Button>(R.id.btnOpenAccessibility)
         val btnOpenAppDetails = findViewById<Button>(R.id.btnOpenAppDetails)
         val btnVisualCalibrate = findViewById<Button>(R.id.btnVisualCalibrate)
+        val btnLiveDelayMinus = findViewById<Button>(R.id.btnLiveDelayMinus)
+        val btnLiveDelayPlus = findViewById<Button>(R.id.btnLiveDelayPlus)
         val btnDelayMinus = findViewById<Button>(R.id.btnDelayMinus)
         val btnDelayPlus = findViewById<Button>(R.id.btnDelayPlus)
         val btnPinWidget = findViewById<Button>(R.id.btnPinWidget)
@@ -76,13 +80,23 @@ class SettingsActivity : AppCompatActivity() {
             service.startVisualCalibrationMode()
         }
 
+        btnLiveDelayMinus.setOnClickListener {
+            prefs.liveDelayTenths = (prefs.liveDelayTenths - 5).coerceIn(10, 100)
+            updateStatusLabels()
+        }
+
+        btnLiveDelayPlus.setOnClickListener {
+            prefs.liveDelayTenths = (prefs.liveDelayTenths + 5).coerceIn(10, 100)
+            updateStatusLabels()
+        }
+
         btnDelayMinus.setOnClickListener {
-            prefs.cameraDelayTenths = (prefs.cameraDelayTenths - 5).coerceIn(15, 80)
+            prefs.cameraDelayTenths = (prefs.cameraDelayTenths - 5).coerceIn(15, 120)
             updateStatusLabels()
         }
 
         btnDelayPlus.setOnClickListener {
-            prefs.cameraDelayTenths = (prefs.cameraDelayTenths + 5).coerceIn(15, 80)
+            prefs.cameraDelayTenths = (prefs.cameraDelayTenths + 5).coerceIn(15, 120)
             updateStatusLabels()
         }
 
@@ -128,7 +142,6 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Recarrega do disco toda vez que volta para a tela para mostrar as coordenadas recém-salvas
         prefs = PrefsManager(this)
         updateStatusLabels()
     }
@@ -153,11 +166,18 @@ class SettingsActivity : AppCompatActivity() {
             tvCalibrationStatus.setTextColor(Color.parseColor("#FBBF24"))
         }
 
-        val seconds = prefs.cameraDelayTenths / 10.0
+        val liveSec = prefs.liveDelayTenths / 10.0
+        tvLiveDelayLabel.text = String.format(
+            Locale.getDefault(),
+            "Espera até o Clique 1 (Live): %.1fs",
+            liveSec
+        )
+
+        val camSec = prefs.cameraDelayTenths / 10.0
         tvDelayLabel.text = String.format(
             Locale.getDefault(),
-            "Tempo entre Clique 1 e 2: %.1fs",
-            seconds
+            "Espera até o Clique 2 (Câmera): %.1fs",
+            camSec
         )
     }
 }

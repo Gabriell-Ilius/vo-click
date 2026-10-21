@@ -4,8 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 
 /**
- * Gerencia as configurações salvas no aparelho usando commit() síncrono para garantir
- * que as coordenadas calibradas dos Alvos 1 e 2 sejam sempre gravadas imediatamente no disco.
+ * Gerencia as configurações salvas no aparelho usando commit() síncrono.
  */
 class PrefsManager(context: Context) {
 
@@ -54,9 +53,6 @@ class PrefsManager(context: Context) {
             prefs.edit().putInt(KEY_CAMERA_PX_Y, value).commit()
         }
 
-    /**
-     * Salva todas as coordenadas dos Alvos 1 e 2 de forma atômica e síncrona (commit = true).
-     */
     fun saveCalibration(liveX: Int, liveY: Int, cameraX: Int, cameraY: Int): Boolean {
         return prefs.edit()
             .putInt(KEY_LIVE_PX_X, liveX)
@@ -67,25 +63,25 @@ class PrefsManager(context: Context) {
             .commit()
     }
 
-    fun resetCalibration() {
-        prefs.edit()
-            .putBoolean(KEY_HAS_CALIBRATION, false)
-            .putInt(KEY_LIVE_PX_X, -1)
-            .putInt(KEY_LIVE_PX_Y, -1)
-            .putInt(KEY_CAMERA_PX_X, -1)
-            .putInt(KEY_CAMERA_PX_Y, -1)
-            .commit()
-    }
-
-    // Tempo de espera em décimos de segundo para o modo Live conectar antes de tocar na câmera (padrão 40 = 4.0s)
-    var cameraDelayTenths: Int
-        get() = prefs.getInt(KEY_CAMERA_DELAY_TENTHS, DEFAULT_DELAY_TENTHS)
+    // Tempo 1: Espera para o Gemini abrir antes de dar o Clique 1 no botão Live (padrão 30 = 3.0s)
+    var liveDelayTenths: Int
+        get() = prefs.getInt(KEY_LIVE_DELAY_TENTHS_V2, DEFAULT_LIVE_DELAY_TENTHS)
         set(value) {
-            prefs.edit().putInt(KEY_CAMERA_DELAY_TENTHS, value).commit()
+            prefs.edit().putInt(KEY_LIVE_DELAY_TENTHS_V2, value).commit()
+        }
+
+    val liveDelayMs: Long
+        get() = (liveDelayTenths.coerceIn(10, 100) * 100L)
+
+    // Tempo 2: Espera após o Clique 1 para o modo Live conectar antes de dar o Clique 2 na Câmera (padrão 55 = 5.5s)
+    var cameraDelayTenths: Int
+        get() = prefs.getInt(KEY_CAMERA_DELAY_TENTHS_V2, DEFAULT_CAMERA_DELAY_TENTHS)
+        set(value) {
+            prefs.edit().putInt(KEY_CAMERA_DELAY_TENTHS_V2, value).commit()
         }
 
     val cameraDelayMs: Long
-        get() = (cameraDelayTenths.coerceIn(15, 80) * 100L)
+        get() = (cameraDelayTenths.coerceIn(15, 120) * 100L)
 
     companion object {
         private const val PREFS_NAME = "olhos_da_vo_prefs"
@@ -96,9 +92,12 @@ class PrefsManager(context: Context) {
         private const val KEY_LIVE_PX_Y = "live_px_y"
         private const val KEY_CAMERA_PX_X = "camera_px_x"
         private const val KEY_CAMERA_PX_Y = "camera_px_y"
-        private const val KEY_CAMERA_DELAY_TENTHS = "camera_delay_tenths"
 
-        // 4.0 segundos de espera padrão (tempo para o Gemini Live abrir e conectar antes do clique na câmera)
-        const val DEFAULT_DELAY_TENTHS = 40
+        // Chaves novas (_v2) para não puxar o valor antigo de 2.2s salvo nas primeiras versões
+        private const val KEY_LIVE_DELAY_TENTHS_V2 = "live_delay_tenths_v2"
+        private const val KEY_CAMERA_DELAY_TENTHS_V2 = "camera_delay_tenths_v2"
+
+        const val DEFAULT_LIVE_DELAY_TENTHS = 30   // 3.0 segundos para o Clique 1 (Live)
+        const val DEFAULT_CAMERA_DELAY_TENTHS = 55 // 5.5 segundos após o Clique 1 para o Clique 2 (Câmera)
     }
 }

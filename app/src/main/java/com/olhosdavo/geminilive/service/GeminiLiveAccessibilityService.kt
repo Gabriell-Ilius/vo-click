@@ -21,9 +21,8 @@ import java.text.Normalizer
 import java.util.Locale
 
 /**
- * Serviço de Acessibilidade (v1.7):
- * - Quando calibrado visualmente com os Alvos (1) e (2), executa os 2 toques diretamente nas
- *   coordenadas salvas (com confirmação visual de pulso verde na tela) sem depender da árvore de janelas!
+ * Serviço de Acessibilidade (v1.8):
+ * - Com tempos configuráveis separados para o Clique 1 (padrão 3.0s) e para o Clique 2 (padrão +5.5s).
  */
 class GeminiLiveAccessibilityService : AccessibilityService() {
 
@@ -67,7 +66,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             if (currentPhase == Phase.IDLE) return
 
             val now = System.currentTimeMillis()
-            if (now - sessionStartTime > 20_000L) {
+            if (now - sessionStartTime > 25_000L) {
                 stopAutomation()
                 return
             }
@@ -86,7 +85,6 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // Se estiver rodando no modo não-calibrado, aproveita eventos da árvore
         if (currentPhase == Phase.IDLE) return
         val freshPrefs = PrefsManager(this)
         if (!freshPrefs.hasVisualCalibration) {
@@ -118,9 +116,6 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         return manager
     }
 
-    /**
-     * Abre o Gemini e mostra os Alvos (1) LIVE e (2) CÂMERA flutuantes na tela.
-     */
     fun startVisualCalibrationMode() {
         stopAutomation()
         GeminiLauncher.launchOfficialGemini(this)
@@ -133,23 +128,23 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         calibrationOverlay?.hide()
         stopAutomation()
 
-        // Sempre lê as preferências recém-gravadas no disco
         val freshPrefs = PrefsManager(this)
 
         GeminiLauncher.launchOfficialGemini(this)
 
-        // MODO PRINCIPAL: Se o usuário já salvou a posição dos Alvos (1) e (2),
-        // usa temporizador direto e garantido nas coordenadas exatas salvas!
+        // Se já salvou a posição dos Alvos (1) e (2), respeita exatamente o Tempo 1 e o Tempo 2!
         if (freshPrefs.hasVisualCalibration &&
             freshPrefs.liveButtonXPx > 0 &&
             freshPrefs.cameraButtonXPx > 0
         ) {
-            val delayStep1 = 1800L
+            val delayStep1 = freshPrefs.liveDelayMs
             val delayStep2 = delayStep1 + freshPrefs.cameraDelayMs
 
+            val t1Sec = freshPrefs.liveDelayTenths / 10.0
+            val t2Sec = freshPrefs.cameraDelayTenths / 10.0
             Toast.makeText(
                 this,
-                "Abrindo Live e ativando câmera em ${freshPrefs.cameraDelayTenths / 10.0}s...",
+                "Clique 1 em ${t1Sec}s • Clique 2 em +${t2Sec}s",
                 Toast.LENGTH_SHORT
             ).show()
 
@@ -158,11 +153,10 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             return
         }
 
-        // MODO SECUNDÁRIO (Caso ainda não tenha posicionado os alvos 1 e 2):
         currentPhase = Phase.STEP_1_OPEN_LIVE
         sessionStartTime = System.currentTimeMillis()
         liveClickedTime = 0L
-        handler.postDelayed(pollRunnable, 800L)
+        handler.postDelayed(pollRunnable, freshPrefs.liveDelayMs)
     }
 
     private fun stopAutomation() {
@@ -179,6 +173,8 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
 
         when (currentPhase) {
             Phase.STEP_1_OPEN_LIVE -> {
+                if (now - sessionStartTime < freshPrefs.liveDelayMs) return
+
                 val liveNode = findBestMatchingNode(rootNodes, LIVE_BUTTON_KEYWORDS, false)
                 if (liveNode != null) {
                     val rect = getClickableBounds(liveNode)
@@ -192,14 +188,12 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
                     liveClickedTime = now
                     return
                 }
-                if (now - sessionStartTime >= 2200L) {
-                    val x = resources.displayMetrics.widthPixels * 0.88f
-                    val y = resources.displayMetrics.heightPixels * 0.90f
-                    ensureOverlayManager().showClickPulse(x, y)
-                    tapCoordinates(x, y)
-                    currentPhase = Phase.STEP_2_OPEN_CAMERA
-                    liveClickedTime = now
-                }
+                val x = resources.displayMetrics.widthPixels * 0.88f
+                val y = resources.displayMetrics.heightPixels * 0.90f
+                ensureOverlayManager().showClickPulse(x, y)
+                tapCoordinates(x, y)
+                currentPhase = Phase.STEP_2_OPEN_CAMERA
+                liveClickedTime = now
             }
 
             Phase.STEP_2_OPEN_CAMERA -> {
@@ -322,7 +316,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         val path = Path().apply {
             moveTo(x, y)
         }
-        val stroke = GestureDescription.StrokeDescription(path, 0L, 120L)
+        val stroke = GestureDescription.StrokeDescription(path, 0L, 160L)
         val gesture = GestureDescription.Builder()
             .addStroke(stroke)
             .build()

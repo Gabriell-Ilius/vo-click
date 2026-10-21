@@ -15,7 +15,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Configurações (v1.7)"
+            android:text="Configurações (v1.8)"
             android:textColor="#F8FAFC"
             android:textSize="26sp"
             android:textStyle="bold" />
@@ -24,7 +24,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Posicione os alvos 1 e 2 na tela e salve para gravar o clique exato."
+            android:text="Posicione os alvos 1 e 2 e ajuste o tempo de espera de cada clique."
             android:textColor="#94A3B8"
             android:textSize="14.5sp" />
 
@@ -83,7 +83,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- CARD 2: SELECIONAR ONDE É O CLIQUE (CALIBRAÇÃO VISUAL COM ALVOS 1 E 2) -->
+        <!-- CARD 2: POSIÇÃO E TEMPO DOS CLIQUES 1 E 2 -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -103,7 +103,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="2. Posição dos Cliques na Tela"
+                    android:text="2. Posição e Tempo dos Cliques"
                     android:textColor="#F8FAFC"
                     android:textSize="17sp"
                     android:textStyle="bold" />
@@ -134,11 +134,57 @@
                     app:backgroundTint="#38BDF8"
                     app:cornerRadius="14dp" />
 
-                <!-- Ajuste do tempo entre o Clique 1 (Live) e o Clique 2 (Câmera) -->
+                <!-- Tempo 1: Espera para dar o Clique 1 (Live) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvLiveDelayLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Espera até o Clique 1 (Live): 3.0s"
+                        android:textColor="#E2E8F0"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLiveDelayMinus"
+                        android:layout_width="48dp"
+                        android:layout_height="44dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:padding="0dp"
+                        android:text="−"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        app:backgroundTint="#1E293B"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLiveDelayPlus"
+                        android:layout_width="48dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="8dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:padding="0dp"
+                        android:text="+"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        app:backgroundTint="#1E293B"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+
+                <!-- Tempo 2: Espera após o Clique 1 para dar o Clique 2 (Câmera) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -147,7 +193,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Tempo entre Clique 1 e 2: 4.0s"
+                        android:text="Espera até o Clique 2 (Câmera): 5.5s"
                         android:textColor="#E2E8F0"
                         android:textSize="14sp"
                         android:textStyle="bold" />
