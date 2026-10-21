@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:paddingStart="6dp"
-            android:text="✨ Olhos da Vó"
+            android:text="👁️ Olhos da Vó"
             android:textColor="#94A3B8"
             android:textSize="16sp"
             android:textStyle="bold" />
@@ -53,31 +53,23 @@
         android:padding="28dp"
         android:contentDescription="Botão gigante: Toque em qualquer lugar para abrir o Gemini com câmera e conversar">
 
-        <!-- Círculo Central com Ícone Moderno de Câmera + Estrela Gemini -->
-        <FrameLayout
+        <!-- Ícone do Olho Amarelo de Alto Contraste -->
+        <ImageView
             android:layout_width="136dp"
             android:layout_height="136dp"
-            android:background="@drawable/bg_icon_glow"
-            android:importantForAccessibility="no">
-
-            <ImageView
-                android:layout_width="76dp"
-                android:layout_height="76dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_camera_sparkle"
-                android:importantForAccessibility="no" />
-        </FrameLayout>
+            android:src="@drawable/ic_launcher_foreground"
+            android:importantForAccessibility="no" />
 
         <TextView
             android:id="@+id/tvMainTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="24dp"
             android:gravity="center"
             android:letterSpacing="0.02"
             android:lineSpacingMultiplier="1.15"
             android:text="TOQUE AQUI\nPARA VER COM\nO GEMINI"
-            android:textColor="#FBBF24"
+            android:textColor="#FFD600"
             android:textSize="34sp"
             android:textStyle="bold" />
 
