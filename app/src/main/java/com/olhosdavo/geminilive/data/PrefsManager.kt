@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 
 /**
- * Gerencia as configurações salvas no aparelho (modo de abertura, voz e coordenadas de fallback).
+ * Gerencia as configurações salvas no aparelho (modo de abertura, voz e posições exatas dos alvos 1 e 2).
  */
 class PrefsManager(context: Context) {
 
@@ -19,11 +19,28 @@ class PrefsManager(context: Context) {
         get() = prefs.getBoolean(KEY_VOICE_FEEDBACK, true)
         set(value) = prefs.edit().putBoolean(KEY_VOICE_FEEDBACK, value).apply()
 
-    var useCoordinateFallback: Boolean
-        get() = prefs.getBoolean(KEY_USE_COORD_FALLBACK, true)
-        set(value) = prefs.edit().putBoolean(KEY_USE_COORD_FALLBACK, value).apply()
+    var hasVisualCalibration: Boolean
+        get() = prefs.getBoolean(KEY_HAS_CALIBRATION, false)
+        set(value) = prefs.edit().putBoolean(KEY_HAS_CALIBRATION, value).apply()
 
-    // Posição padrão do botão Gemini Live (canto inferior direito da barra de entrada: X=88%, Y=91%)
+    // Coordenadas em pixels exatos da tela (salvas pelo Calibrador Visual de Alvos)
+    var liveButtonXPx: Int
+        get() = prefs.getInt(KEY_LIVE_PX_X, -1)
+        set(value) = prefs.edit().putInt(KEY_LIVE_PX_X, value).apply()
+
+    var liveButtonYPx: Int
+        get() = prefs.getInt(KEY_LIVE_PX_Y, -1)
+        set(value) = prefs.edit().putInt(KEY_LIVE_PX_Y, value).apply()
+
+    var cameraButtonXPx: Int
+        get() = prefs.getInt(KEY_CAMERA_PX_X, -1)
+        set(value) = prefs.edit().putInt(KEY_CAMERA_PX_X, value).apply()
+
+    var cameraButtonYPx: Int
+        get() = prefs.getInt(KEY_CAMERA_PX_Y, -1)
+        set(value) = prefs.edit().putInt(KEY_CAMERA_PX_Y, value).apply()
+
+    // Porcentagens padrão caso ainda não tenha usado o Calibrador Visual
     var liveButtonXPercent: Int
         get() = prefs.getInt(KEY_LIVE_BTN_X, DEFAULT_LIVE_X)
         set(value) = prefs.edit().putInt(KEY_LIVE_BTN_X, value).apply()
@@ -32,7 +49,6 @@ class PrefsManager(context: Context) {
         get() = prefs.getInt(KEY_LIVE_BTN_Y, DEFAULT_LIVE_Y)
         set(value) = prefs.edit().putInt(KEY_LIVE_BTN_Y, value).apply()
 
-    // Posição padrão do botão de Câmera dentro do Gemini Live (barra inferior esquerda: X=22%, Y=89%)
     var cameraButtonXPercent: Int
         get() = prefs.getInt(KEY_CAMERA_BTN_X, DEFAULT_CAMERA_X)
         set(value) = prefs.edit().putInt(KEY_CAMERA_BTN_X, value).apply()
@@ -41,19 +57,23 @@ class PrefsManager(context: Context) {
         get() = prefs.getInt(KEY_CAMERA_BTN_Y, DEFAULT_CAMERA_Y)
         set(value) = prefs.edit().putInt(KEY_CAMERA_BTN_Y, value).apply()
 
-    // Tempo de espera em décimos de segundo antes de usar o clique na câmera (padrão 22 = 2.2s)
+    // Tempo de espera em décimos de segundo para o modo Live abrir antes de tocar na câmera (padrão 28 = 2.8s)
     var cameraDelayTenths: Int
         get() = prefs.getInt(KEY_CAMERA_DELAY_TENTHS, DEFAULT_DELAY_TENTHS)
         set(value) = prefs.edit().putInt(KEY_CAMERA_DELAY_TENTHS, value).apply()
 
     val cameraDelayMs: Long
-        get() = (cameraDelayTenths.coerceIn(10, 50) * 100L)
+        get() = (cameraDelayTenths.coerceIn(15, 60) * 100L)
 
     companion object {
         private const val PREFS_NAME = "olhos_da_vo_prefs"
         private const val KEY_AUTO_LAUNCH = "auto_launch_on_open"
         private const val KEY_VOICE_FEEDBACK = "voice_feedback"
-        private const val KEY_USE_COORD_FALLBACK = "use_coord_fallback"
+        private const val KEY_HAS_CALIBRATION = "has_visual_calibration"
+        private const val KEY_LIVE_PX_X = "live_px_x"
+        private const val KEY_LIVE_PX_Y = "live_px_y"
+        private const val KEY_CAMERA_PX_X = "camera_px_x"
+        private const val KEY_CAMERA_PX_Y = "camera_px_y"
         private const val KEY_LIVE_BTN_X = "live_btn_x"
         private const val KEY_LIVE_BTN_Y = "live_btn_y"
         private const val KEY_CAMERA_BTN_X = "camera_btn_x"
@@ -63,7 +83,7 @@ class PrefsManager(context: Context) {
         const val DEFAULT_LIVE_X = 88
         const val DEFAULT_LIVE_Y = 91
         const val DEFAULT_CAMERA_X = 22
-        const val DEFAULT_CAMERA_Y = 89
-        const val DEFAULT_DELAY_TENTHS = 22
+        const val DEFAULT_CAMERA_Y = 86
+        const val DEFAULT_DELAY_TENTHS = 28
     }
 }

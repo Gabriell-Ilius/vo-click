@@ -1,81 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
-    android:padding="12dp">
+    android:background="#090D16"
+    android:orientation="vertical"
+    android:padding="16dp">
 
-    <!-- BOTÃO GIGANTE DE TELA INTEIRA PARA A AVÓ -->
+    <!-- Barra superior discreta com título e botão de Configurar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingBottom="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="6dp"
+            android:text="✨ Olhos da Vó"
+            android:textColor="#94A3B8"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnFamilySettings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_settings_pill"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:text="⚙️ Configurar"
+            android:textColor="#E2E8F0"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- CARD GIGANTE DE TELA INTEIRA PARA A AVÓ -->
     <LinearLayout
         android:id="@+id/btnGiantStart"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/bg_giant_button"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/bg_main_card"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="24dp"
-        android:contentDescription="Botão gigante: Toque em qualquer lugar da tela para abrir o Gemini com câmera e conversar">
+        android:padding="28dp"
+        android:contentDescription="Botão gigante: Toque em qualquer lugar para abrir o Gemini com câmera e conversar">
 
-        <!-- Ícone Grande de Alto Contraste -->
-        <ImageView
-            android:layout_width="140dp"
-            android:layout_height="140dp"
-            android:src="@drawable/ic_launcher_foreground"
-            android:importantForAccessibility="no" />
+        <!-- Círculo Central com Ícone Moderno de Câmera + Estrela Gemini -->
+        <FrameLayout
+            android:layout_width="136dp"
+            android:layout_height="136dp"
+            android:background="@drawable/bg_icon_glow"
+            android:importantForAccessibility="no">
+
+            <ImageView
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_camera_sparkle"
+                android:importantForAccessibility="no" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/tvMainTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="28dp"
             android:gravity="center"
+            android:letterSpacing="0.02"
             android:lineSpacingMultiplier="1.15"
             android:text="TOQUE AQUI\nPARA VER COM\nO GEMINI"
-            android:textColor="#FFD600"
-            android:textSize="38sp"
+            android:textColor="#FBBF24"
+            android:textSize="34sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvMainSubtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="16dp"
             android:gravity="center"
-            android:text="Abre o Gemini Live e liga a câmera automaticamente"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp" />
+            android:lineSpacingMultiplier="1.2"
+            android:text="Abre a câmera e conversa com você"
+            android:textColor="#E2E8F0"
+            android:textSize="20sp" />
 
-        <!-- Aviso visível apenas enquanto o familiar ainda não ativou a Acessibilidade -->
+        <!-- Aviso visível apenas enquanto a Acessibilidade não estiver ativa -->
         <TextView
             android:id="@+id/tvStatusBanner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:background="#B71C1C"
+            android:layout_marginTop="24dp"
+            android:background="#DC2626"
             android:gravity="center"
-            android:padding="16dp"
-            android:text="⚠️ ATENÇÃO FAMILIAR: Toque aqui para ativar a Acessibilidade na 1ª vez"
+            android:padding="14dp"
+            android:text="⚠️ Toque aqui para ativar a permissão na 1ª vez"
             android:textColor="#FFFFFF"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:visibility="gone" />
 
     </LinearLayout>
 
-    <!-- Área discreta no canto superior direito: segurar por 2 segundos abre Configurações da Família -->
-    <TextView
-        android:id="@+id/btnFamilySettings"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|end"
-        android:layout_margin="20dp"
-        android:background="#262626"
-        android:paddingHorizontal="14dp"
-        android:paddingVertical="8dp"
-        android:text="⚙️ Família (Segure)"
-        android:textColor="#9E9E9E"
-        android:textSize="13sp" />
-
-</FrameLayout>
+</LinearLayout>

@@ -7,27 +7,27 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.widget.Button
-import android.widget.CheckBox
-import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.olhosdavo.geminilive.R
 import com.olhosdavo.geminilive.data.PrefsManager
 import com.olhosdavo.geminilive.service.GeminiLiveAccessibilityService
 import java.util.Locale
 
 /**
- * Painel de Configuração da Família (protegido por toque longo no canto superior direito).
+ * Painel de Configuração com Calibrador Visual Flutuante (Alvos 1 e 2) e Design Material 3.
  */
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var prefs: PrefsManager
     private lateinit var tvServiceStatus: TextView
-    private lateinit var tvLiveCoordsLabel: TextView
-    private lateinit var tvCameraCoordsLabel: TextView
+    private lateinit var tvCalibrationStatus: TextView
     private lateinit var tvDelayLabel: TextView
+    private lateinit var btnResetCalibration: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,39 +36,77 @@ class SettingsActivity : AppCompatActivity() {
         prefs = PrefsManager(this)
 
         tvServiceStatus = findViewById(R.id.tvServiceStatus)
-        tvLiveCoordsLabel = findViewById(R.id.tvLiveCoordsLabel)
-        tvCameraCoordsLabel = findViewById(R.id.tvCameraCoordsLabel)
+        tvCalibrationStatus = findViewById(R.id.tvCalibrationStatus)
         tvDelayLabel = findViewById(R.id.tvDelayLabel)
+        btnResetCalibration = findViewById(R.id.btnResetCalibration)
 
-        val btnPinWidget = findViewById<Button>(R.id.btnPinWidget)
         val btnOpenAccessibility = findViewById<Button>(R.id.btnOpenAccessibility)
         val btnOpenAppDetails = findViewById<Button>(R.id.btnOpenAppDetails)
-        val cbAutoLaunchOnOpen = findViewById<CheckBox>(R.id.cbAutoLaunchOnOpen)
-        val cbVoiceFeedback = findViewById<CheckBox>(R.id.cbVoiceFeedback)
-        val cbUseCoordinateFallback = findViewById<CheckBox>(R.id.cbUseCoordinateFallback)
+        val btnVisualCalibrate = findViewById<Button>(R.id.btnVisualCalibrate)
+        val btnDelayMinus = findViewById<Button>(R.id.btnDelayMinus)
+        val btnDelayPlus = findViewById<Button>(R.id.btnDelayPlus)
+        val btnPinWidget = findViewById<Button>(R.id.btnPinWidget)
 
-        val sbLiveX = findViewById<SeekBar>(R.id.sbLiveX)
-        val sbLiveY = findViewById<SeekBar>(R.id.sbLiveY)
-        val sbCameraX = findViewById<SeekBar>(R.id.sbCameraX)
-        val sbCameraY = findViewById<SeekBar>(R.id.sbCameraY)
-        val sbCameraDelay = findViewById<SeekBar>(R.id.sbCameraDelay)
+        val swAutoLaunchOnOpen = findViewById<SwitchMaterial>(R.id.swAutoLaunchOnOpen)
+        val swVoiceFeedback = findViewById<SwitchMaterial>(R.id.swVoiceFeedback)
 
         val btnTestNow = findViewById<Button>(R.id.btnTestNow)
         val btnCloseSettings = findViewById<Button>(R.id.btnCloseSettings)
 
-        cbAutoLaunchOnOpen.isChecked = prefs.autoLaunchOnOpen
-        cbVoiceFeedback.isChecked = prefs.voiceFeedback
-        cbUseCoordinateFallback.isChecked = prefs.useCoordinateFallback
+        swAutoLaunchOnOpen.isChecked = prefs.autoLaunchOnOpen
+        swVoiceFeedback.isChecked = prefs.voiceFeedback
 
-        sbLiveX.progress = prefs.liveButtonXPercent
-        sbLiveY.progress = prefs.liveButtonYPercent
-        sbCameraX.progress = prefs.cameraButtonXPercent
-        sbCameraY.progress = prefs.cameraButtonYPercent
-        sbCameraDelay.progress = prefs.cameraDelayTenths
+        updateStatusLabels()
 
-        updateLabels()
+        btnOpenAccessibility.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
 
-        // Fixa o Widget 2x2 diretamente na Tela Inicial com 1 clique
+        btnOpenAppDetails.setOnClickListener {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", packageName, null)
+            }
+            startActivity(intent)
+        }
+
+        // Abre os 2 alvos flutuantes sobre o Gemini para calibrar arrastando com o dedo!
+        btnVisualCalibrate.setOnClickListener {
+            val service = GeminiLiveAccessibilityService.instance
+            if (!GeminiLiveAccessibilityService.isServiceEnabled(this) || service == null) {
+                Toast.makeText(
+                    this,
+                    "Ative primeiro o Serviço de Acessibilidade no Card 1!",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@setOnClickListener
+            }
+            service.startVisualCalibrationMode()
+        }
+
+        btnResetCalibration.setOnClickListener {
+            prefs.hasVisualCalibration = false
+            prefs.liveButtonXPx = -1
+            prefs.liveButtonYPx = -1
+            prefs.cameraButtonXPx = -1
+            prefs.cameraButtonYPx = -1
+            updateStatusLabels()
+            Toast.makeText(
+                this,
+                "Calibração resetada para o modo Automático.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        btnDelayMinus.setOnClickListener {
+            prefs.cameraDelayTenths = (prefs.cameraDelayTenths - 3).coerceIn(15, 60)
+            updateStatusLabels()
+        }
+
+        btnDelayPlus.setOnClickListener {
+            prefs.cameraDelayTenths = (prefs.cameraDelayTenths + 3).coerceIn(15, 60)
+            updateStatusLabels()
+        }
+
         btnPinWidget.setOnClickListener {
             val appWidgetManager = AppWidgetManager.getInstance(this)
             val myProvider = ComponentName(this, OlhosDaVoWidgetProvider::class.java)
@@ -83,56 +121,20 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        btnOpenAccessibility.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
-
-        btnOpenAppDetails.setOnClickListener {
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", packageName, null)
-            }
-            startActivity(intent)
-        }
-
-        cbAutoLaunchOnOpen.setOnCheckedChangeListener { _, isChecked ->
+        swAutoLaunchOnOpen.setOnCheckedChangeListener { _, isChecked ->
             prefs.autoLaunchOnOpen = isChecked
         }
 
-        cbVoiceFeedback.setOnCheckedChangeListener { _, isChecked ->
+        swVoiceFeedback.setOnCheckedChangeListener { _, isChecked ->
             prefs.voiceFeedback = isChecked
         }
-
-        cbUseCoordinateFallback.setOnCheckedChangeListener { _, isChecked ->
-            prefs.useCoordinateFallback = isChecked
-        }
-
-        val seekListener = object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (!fromUser) return
-                prefs.liveButtonXPercent = sbLiveX.progress.coerceIn(5, 95)
-                prefs.liveButtonYPercent = sbLiveY.progress.coerceIn(5, 98)
-                prefs.cameraButtonXPercent = sbCameraX.progress.coerceIn(5, 95)
-                prefs.cameraButtonYPercent = sbCameraY.progress.coerceIn(5, 98)
-                prefs.cameraDelayTenths = sbCameraDelay.progress.coerceIn(10, 50)
-                updateLabels()
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        }
-
-        sbLiveX.setOnSeekBarChangeListener(seekListener)
-        sbLiveY.setOnSeekBarChangeListener(seekListener)
-        sbCameraX.setOnSeekBarChangeListener(seekListener)
-        sbCameraY.setOnSeekBarChangeListener(seekListener)
-        sbCameraDelay.setOnSeekBarChangeListener(seekListener)
 
         btnTestNow.setOnClickListener {
             val service = GeminiLiveAccessibilityService.instance
             if (!GeminiLiveAccessibilityService.isServiceEnabled(this) || service == null) {
                 Toast.makeText(
                     this,
-                    "Ative primeiro o Serviço de Acessibilidade no Passo 1!",
+                    "Ative primeiro o Serviço de Acessibilidade no Card 1!",
                     Toast.LENGTH_LONG
                 ).show()
                 return@setOnClickListener
@@ -147,25 +149,33 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val enabled = GeminiLiveAccessibilityService.isServiceEnabled(this)
-        if (enabled) {
-            tvServiceStatus.text = "1. Serviço de Acessibilidade: ATIVADO ✅"
-            tvServiceStatus.setTextColor(Color.parseColor("#00E676"))
-        } else {
-            tvServiceStatus.text = "1. Serviço de Acessibilidade: DESATIVADO ❌"
-            tvServiceStatus.setTextColor(Color.parseColor("#FF5252"))
-        }
+        updateStatusLabels()
     }
 
-    private fun updateLabels() {
-        tvLiveCoordsLabel.text =
-            "Posição do botão LIVE (X: ${prefs.liveButtonXPercent}%, Y: ${prefs.liveButtonYPercent}%)"
-        tvCameraCoordsLabel.text =
-            "Posição do botão CÂMERA no Live (X: ${prefs.cameraButtonXPercent}%, Y: ${prefs.cameraButtonYPercent}%)"
+    private fun updateStatusLabels() {
+        val enabled = GeminiLiveAccessibilityService.isServiceEnabled(this)
+        if (enabled) {
+            tvServiceStatus.text = "1. Acessibilidade: ATIVADA ✅"
+            tvServiceStatus.setTextColor(Color.parseColor("#4ADE80"))
+        } else {
+            tvServiceStatus.text = "1. Acessibilidade: DESATIVADA ❌"
+            tvServiceStatus.setTextColor(Color.parseColor("#F87171"))
+        }
+
+        if (prefs.hasVisualCalibration && prefs.cameraButtonXPx > 0) {
+            tvCalibrationStatus.text = "✅ Calibrado na tela: Alvo 1 (${prefs.liveButtonXPx}, ${prefs.liveButtonYPx}) • Alvo 2 (${prefs.cameraButtonXPx}, ${prefs.cameraButtonYPx})"
+            tvCalibrationStatus.setTextColor(Color.parseColor("#4ADE80"))
+            btnResetCalibration.visibility = View.VISIBLE
+        } else {
+            tvCalibrationStatus.text = "Modo atual: Detecção Automática dos botões"
+            tvCalibrationStatus.setTextColor(Color.parseColor("#38BDF8"))
+            btnResetCalibration.visibility = View.GONE
+        }
+
         val seconds = prefs.cameraDelayTenths / 10.0
         tvDelayLabel.text = String.format(
             Locale.getDefault(),
-            "Tempo de espera para abrir a câmera: %.1f segundos",
+            "Espera para clicar na câmera: %.1fs",
             seconds
         )
     }

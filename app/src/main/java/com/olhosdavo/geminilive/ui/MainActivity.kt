@@ -15,9 +15,8 @@ import com.olhosdavo.geminilive.service.GeminiLiveAccessibilityService
 import com.olhosdavo.geminilive.util.FeedbackHelper
 
 /**
- * Tela Principal (Alto Contraste Preto/Amarelo):
- * Transforma 100% da tela do celular em um único botão gigante para a avó,
- * e também recebe o disparo direto quando ela toca no Widget 2x2 na tela inicial.
+ * Tela Principal (Visual Moderno Escuro e Alto Contraste):
+ * Card gigante de 1 toque para a avó + suporte ao Widget 2x2 na tela inicial.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -49,16 +48,10 @@ class MainActivity : AppCompatActivity() {
             onGiantButtonTapped()
         }
 
-        // Se a avó esbarrar com toque curto no botão do canto, também abre o Gemini Live!
+        // Botão Configurar no topo abre as configurações
         btnFamilySettings.setOnClickListener {
-            onGiantButtonTapped()
-        }
-
-        // Apenas SEGURAR (toque longo) no botão do canto abre as Configurações da Família
-        btnFamilySettings.setOnLongClickListener {
             FeedbackHelper.vibrateShort(this)
             startActivity(Intent(this, SettingsActivity::class.java))
-            true
         }
     }
 
