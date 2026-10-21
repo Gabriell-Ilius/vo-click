@@ -21,7 +21,8 @@ import java.util.Locale
 /**
  * Serviço de Acessibilidade que automatiza a abertura do Gemini Live com Câmera em 2 etapas:
  * - Etapa 1 (STEP_1_OPEN_LIVE): Localiza e clica no botão "Live" no app oficial do Gemini.
- * - Etapa 2 (STEP_2_OPEN_CAMERA): Aguarda o modo Live iniciar e clica em "Ativar câmera".
+ * - Etapa 2 (STEP_2_OPEN_CAMERA): Aguarda o modo Live conectar e clica no botão de "Câmera"
+ *   na barra inferior do Gemini Live (com retentativa automática até a câmera abrir).
  */
 class GeminiLiveAccessibilityService : AccessibilityService() {
 
@@ -37,14 +38,16 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
     private var currentPhase: Phase = Phase.IDLE
     private var sessionStartTime: Long = 0L
     private var liveClickedTime: Long = 0L
+    private var cameraClickAttempts: Int = 0
+    private var lastCameraAttemptTime: Long = 0L
 
     private val pollRunnable = object : Runnable {
         override fun run() {
             if (currentPhase == Phase.IDLE) return
 
             val now = System.currentTimeMillis()
-            // Timeout total de segurança de 12 segundos para nunca travar o celular
-            if (now - sessionStartTime > 12_000L) {
+            // Timeout total de segurança de 16 segundos
+            if (now - sessionStartTime > 16_000L) {
                 stopAutomation()
                 return
             }
@@ -87,6 +90,8 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         currentPhase = Phase.STEP_1_OPEN_LIVE
         sessionStartTime = System.currentTimeMillis()
         liveClickedTime = 0L
+        cameraClickAttempts = 0
+        lastCameraAttemptTime = 0L
 
         GeminiLauncher.launchOfficialGemini(this)
 
@@ -114,7 +119,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
                 // 1) Verifica se JÁ estamos dentro da tela do Gemini Live
                 if (isAlreadyInsideGeminiLive(rootNodes)) {
                     currentPhase = Phase.STEP_2_OPEN_CAMERA
-                    liveClickedTime = now - 800L
+                    liveClickedTime = now - 1500L
                     return
                 }
 
@@ -122,18 +127,19 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
                 val liveNode = findBestMatchingNode(
                     roots = rootNodes,
                     keywords = LIVE_BUTTON_KEYWORDS,
-                    excludeKeywords = emptyList()
+                    excludeKeywords = emptyList(),
+                    requireBottomHalf = false
                 )
 
                 if (liveNode != null) {
-                    clickNodeOrTapBounds(liveNode)
+                    clickNodeAndTapBounds(liveNode, preferGestureTap = false)
                     currentPhase = Phase.STEP_2_OPEN_CAMERA
                     liveClickedTime = now
                     return
                 }
 
-                // 3) Fallback por coordenada se após 2.0 segundos o botão Live não foi achado por texto
-                if (prefs.useCoordinateFallback && (now - sessionStartTime) >= 2000L) {
+                // 3) Fallback por coordenada se após 2.2 segundos o botão Live não foi achado por texto
+                if (prefs.useCoordinateFallback && (now - sessionStartTime) >= 2200L) {
                     tapScreenPercent(prefs.liveButtonXPercent, prefs.liveButtonYPercent)
                     currentPhase = Phase.STEP_2_OPEN_CAMERA
                     liveClickedTime = now
@@ -141,15 +147,13 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             }
 
             Phase.STEP_2_OPEN_CAMERA -> {
-                val elapsedSinceLive = now - liveClickedTime
-                // Aguarda pelo menos 1.1s para a tela do Gemini Live carregar os botões inferiores
-                if (elapsedSinceLive < 1100L) return
-
-                // Se a câmera já estiver ligada ("Desativar câmera"), encerra com sucesso!
+                // 1) Se a câmera já estiver ligada ("Turn off camera" / "Desativar câmera" / "Switch camera"),
+                // vibra confirmando sucesso e encerra a automação!
                 val alreadyOnNode = findBestMatchingNode(
                     roots = rootNodes,
                     keywords = CAMERA_ALREADY_ON_KEYWORDS,
-                    excludeKeywords = emptyList()
+                    excludeKeywords = emptyList(),
+                    requireBottomHalf = false
                 )
                 if (alreadyOnNode != null) {
                     FeedbackHelper.vibrateCameraReady(this)
@@ -157,25 +161,65 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
                     return
                 }
 
-                // 1) Procura o botão de ligar a Câmera dentro do Gemini Live
-                val cameraNode = findBestMatchingNode(
-                    roots = rootNodes,
-                    keywords = CAMERA_BUTTON_KEYWORDS,
-                    excludeKeywords = CAMERA_EXCLUDE_KEYWORDS
-                )
+                val elapsedSinceLive = now - liveClickedTime
+                // Aguarda o Gemini Live terminar a animação de abertura e conexão (mínimo 2.4s ou valor configurado)
+                val requiredInitialWait = maxOf(2400L, prefs.cameraDelayMs)
+                if (elapsedSinceLive < requiredInitialWait) return
 
-                if (cameraNode != null) {
-                    clickNodeOrTapBounds(cameraNode)
+                // Aguarda pelo menos 1.7s entre cada tentativa de clique na câmera
+                if (now - lastCameraAttemptTime < 1700L) return
+
+                // Se já tentou 3 vezes, encerra para não clicar repetidamente
+                if (cameraClickAttempts >= 3) {
                     FeedbackHelper.vibrateCameraReady(this)
                     stopAutomation()
                     return
                 }
 
-                // 2) Fallback por coordenada após o tempo configurado (ex: 2.2s após abrir o Live)
-                if (prefs.useCoordinateFallback && elapsedSinceLive >= prefs.cameraDelayMs) {
+                // 2) Procura o botão de ligar a Câmera na metade inferior da tela do Gemini Live
+                val cameraNode = findBestMatchingNode(
+                    roots = rootNodes,
+                    keywords = CAMERA_BUTTON_KEYWORDS,
+                    excludeKeywords = CAMERA_EXCLUDE_KEYWORDS,
+                    requireBottomHalf = true
+                )
+
+                if (cameraNode != null) {
+                    cameraClickAttempts++
+                    lastCameraAttemptTime = now
+                    // No Gemini Live, o toque físico nas coordenadas do botão (preferGestureTap = true)
+                    // é mais confiável que apenas ACTION_CLICK
+                    clickNodeAndTapBounds(cameraNode, preferGestureTap = (cameraClickAttempts == 1))
+                    if (cameraClickAttempts >= 2) {
+                        FeedbackHelper.vibrateCameraReady(this)
+                    }
+                    return
+                }
+
+                // 3) Se não achou pelo nome "Camera", procura a barra inferior do Gemini Live
+                // (ex: alinhado com o botão "Share screen" / "Hold" / "End") e clica no 1º botão à esquerda
+                val bottomBarLeftButtonRect = findLeftmostLiveBottomBarButton(rootNodes)
+                if (bottomBarLeftButtonRect != null) {
+                    cameraClickAttempts++
+                    lastCameraAttemptTime = now
+                    tapCoordinates(
+                        bottomBarLeftButtonRect.centerX().toFloat(),
+                        bottomBarLeftButtonRect.centerY().toFloat()
+                    )
+                    if (cameraClickAttempts >= 2) {
+                        FeedbackHelper.vibrateCameraReady(this)
+                    }
+                    return
+                }
+
+                // 4) Fallback final por coordenada configurada (X%, Y%)
+                if (prefs.useCoordinateFallback) {
+                    cameraClickAttempts++
+                    lastCameraAttemptTime = now
                     tapScreenPercent(prefs.cameraButtonXPercent, prefs.cameraButtonYPercent)
-                    FeedbackHelper.vibrateCameraReady(this)
-                    stopAutomation()
+                    if (cameraClickAttempts >= 2) {
+                        FeedbackHelper.vibrateCameraReady(this)
+                    }
                 }
             }
 
@@ -206,18 +250,26 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             "compartilhar tela",
             "share screen",
             "encerrar modo live",
-            "sair do modo live"
+            "sair do modo live",
+            "end live"
         )
-        return findBestMatchingNode(roots, liveScreenIndicators, emptyList()) != null
+        return findBestMatchingNode(roots, liveScreenIndicators, emptyList(), false) != null
     }
 
     private fun findBestMatchingNode(
         roots: List<AccessibilityNodeInfo>,
         keywords: List<String>,
-        excludeKeywords: List<String>
+        excludeKeywords: List<String>,
+        requireBottomHalf: Boolean
     ): AccessibilityNodeInfo? {
+        val minCenterY = if (requireBottomHalf) {
+            (resources.displayMetrics.heightPixels * 0.55f).toInt()
+        } else {
+            0
+        }
+
         for (root in roots) {
-            val found = searchNodeTree(root, keywords, excludeKeywords)
+            val found = searchNodeTree(root, keywords, excludeKeywords, minCenterY)
             if (found != null) return found
         }
         return null
@@ -226,9 +278,23 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
     private fun searchNodeTree(
         node: AccessibilityNodeInfo?,
         keywords: List<String>,
-        excludeKeywords: List<String>
+        excludeKeywords: List<String>,
+        minCenterY: Int
     ): AccessibilityNodeInfo? {
         if (node == null || !node.isVisibleToUser) return null
+
+        val rect = Rect()
+        node.getBoundsInScreen(rect)
+
+        if (minCenterY > 0 && rect.centerY() < minCenterY) {
+            // Mesmo que um container pai tenha centro acima da metade, seus filhos podem estar na barra inferior
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
+                val match = searchNodeTree(child, keywords, excludeKeywords, minCenterY)
+                if (match != null) return match
+            }
+            return null
+        }
 
         val contentDesc = normalizeText(node.contentDescription?.toString())
         val text = normalizeText(node.text?.toString())
@@ -251,18 +317,82 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
 
         for (i in 0 until node.childCount) {
             val child = node.getChild(i) ?: continue
-            val match = searchNodeTree(child, keywords, excludeKeywords)
+            val match = searchNodeTree(child, keywords, excludeKeywords, minCenterY)
             if (match != null) return match
         }
         return null
     }
 
-    private fun clickNodeOrTapBounds(node: AccessibilityNodeInfo) {
+    /**
+     * Na tela do Gemini Live, a barra inferior possui 4 botões alinhados horizontalmente:
+     * [Câmera] [Compartilhar Tela] [Pausar/Hold] [Encerrar/End].
+     * Se encontrarmos qualquer indicador da barra inferior ou pelo menos 3 botões clicáveis alinhados
+     * na parte inferior da tela, retornamos o botão mais à esquerda (que é o botão de Câmera).
+     */
+    private fun findLeftmostLiveBottomBarButton(roots: List<AccessibilityNodeInfo>): Rect? {
+        val screenHeight = resources.displayMetrics.heightPixels
+        val screenWidth = resources.displayMetrics.widthPixels
+        val minY = (screenHeight * 0.72f).toInt()
+        val maxY = (screenHeight * 0.96f).toInt()
+
+        val bottomClickableRects = mutableListOf<Rect>()
+        for (root in roots) {
+            collectBottomClickableNodes(root, minY, maxY, screenWidth, bottomClickableRects)
+        }
+
+        if (bottomClickableRects.size >= 3) {
+            return bottomClickableRects.minByOrNull { it.centerX() }
+        }
+        return null
+    }
+
+    private fun collectBottomClickableNodes(
+        node: AccessibilityNodeInfo?,
+        minY: Int,
+        maxY: Int,
+        screenWidth: Int,
+        outRects: MutableList<Rect>
+    ) {
+        if (node == null || !node.isVisibleToUser) return
+
+        if (node.isClickable) {
+            val rect = Rect()
+            node.getBoundsInScreen(rect)
+            val width = rect.width()
+            val height = rect.height()
+            // Botões da barra inferior do Gemini Live têm tamanho de botão (não ocupam a largura toda)
+            if (rect.centerY() in minY..maxY &&
+                width in 40..(screenWidth / 2) &&
+                height in 40..350
+            ) {
+                outRects.add(rect)
+            }
+        }
+
+        for (i in 0 until node.childCount) {
+            collectBottomClickableNodes(node.getChild(i), minY, maxY, screenWidth, outRects)
+        }
+    }
+
+    private fun clickNodeAndTapBounds(node: AccessibilityNodeInfo, preferGestureTap: Boolean) {
+        val rect = Rect()
+        node.getBoundsInScreen(rect)
+
+        if (preferGestureTap && !rect.isEmpty && rect.centerX() > 0 && rect.centerY() > 0) {
+            tapCoordinates(rect.centerX().toFloat(), rect.centerY().toFloat())
+            return
+        }
+
         var current: AccessibilityNodeInfo? = node
         var clicked = false
         var depth = 0
         while (current != null && depth < 5) {
             if (current.isClickable) {
+                val cRect = Rect()
+                current.getBoundsInScreen(cRect)
+                if (!cRect.isEmpty) {
+                    rect.set(cRect)
+                }
                 clicked = current.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 if (clicked) break
             }
@@ -270,9 +400,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             depth++
         }
 
-        val rect = Rect()
-        node.getBoundsInScreen(rect)
-        if (!clicked && !rect.isEmpty && rect.centerX() > 0 && rect.centerY() > 0) {
+        if (!rect.isEmpty && rect.centerX() > 0 && rect.centerY() > 0) {
             tapCoordinates(rect.centerX().toFloat(), rect.centerY().toFloat())
         }
     }
@@ -288,7 +416,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         val path = Path().apply {
             moveTo(x, y)
         }
-        val stroke = GestureDescription.StrokeDescription(path, 0L, 90L)
+        val stroke = GestureDescription.StrokeDescription(path, 0L, 100L)
         val gesture = GestureDescription.Builder()
             .addStroke(stroke)
             .build()
@@ -310,6 +438,9 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             "conversar no live",
             "entrar no modo live",
             "iniciar o gemini live",
+            "usar o gemini live",
+            "use gemini live",
+            "talk live",
             "gemini live",
             "modo live",
             "go live",
@@ -322,8 +453,13 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             "abrir camera",
             "usar camera",
             "iniciar video",
+            "compartilhar video",
             "turn on camera",
             "start camera",
+            "open camera",
+            "use camera",
+            "start video",
+            "share video",
             "camera",
             "video"
         )
@@ -331,8 +467,13 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         private val CAMERA_ALREADY_ON_KEYWORDS = listOf(
             "desativar camera",
             "desligar camera",
+            "parar camera",
+            "alternar camera",
+            "trocar camera",
             "turn off camera",
-            "stop camera"
+            "stop camera",
+            "switch camera",
+            "flip camera"
         )
 
         private val CAMERA_EXCLUDE_KEYWORDS = listOf(
@@ -341,7 +482,8 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             "turn off camera",
             "trocar camera",
             "alternar camera",
-            "switch camera"
+            "switch camera",
+            "flip camera"
         )
 
         fun isServiceEnabled(context: Context): Boolean {
