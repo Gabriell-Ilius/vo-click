@@ -25,7 +25,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Deixe tudo ajustado para o celular da sua avó."
+            android:text="Acionamento automático por comando virtual."
             android:textColor="#94A3B8"
             android:textSize="15sp" />
 
@@ -59,7 +59,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Necessário para clicar sozinho no modo Live e na Câmera. Se aparecer 'Configuração restrita', libere primeiro nos Dados do App (menu ⋮ no topo)."
+                    android:text="Permite enviar o comando virtual direto para o botão Live e para o botão Câmera do Gemini."
                     android:textColor="#94A3B8"
                     android:textSize="13.5sp" />
 
@@ -92,7 +92,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- CARD 2: CALIBRAÇÃO VISUAL DE ALVOS NA TELA -->
+        <!-- CARD 2: TELA INICIAL E VOZ -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -112,124 +112,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="2. Calibração Visual na Tela"
-                    android:textColor="#F8FAFC"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvCalibrationStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Modo atual: Automático (pelo nome dos botões)"
-                    android:textColor="#38BDF8"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Se no celular dela a câmera não abrir sozinha, toque abaixo para abrir 2 alvos flutuantes sobre o Gemini: basta arrastar o alvo (1) para o botão Live e o alvo (2) para o botão Câmera!"
-                    android:textColor="#94A3B8"
-                    android:textSize="13.5sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnVisualCalibrate"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:paddingVertical="12dp"
-                    android:text="🎯 Posicionar Alvos (1) e (2) na Tela"
-                    android:textAllCaps="false"
-                    android:textColor="#0F172A"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="#38BDF8"
-                    app:cornerRadius="14dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnResetCalibration"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Voltar para Detecção Automática"
-                    android:textAllCaps="false"
-                    android:textColor="#94A3B8"
-                    android:textSize="13sp"
-                    app:backgroundTint="#1E293B"
-                    app:cornerRadius="14dp" />
-
-                <!-- Ajuste simples do tempo de espera com botões - e + -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/tvDelayLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Espera para clicar na câmera: 2.8s"
-                        android:textColor="#E2E8F0"
-                        android:textSize="14sp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnDelayMinus"
-                        android:layout_width="48dp"
-                        android:layout_height="44dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:padding="0dp"
-                        android:text="−"
-                        android:textColor="#FFFFFF"
-                        android:textSize="18sp"
-                        app:backgroundTint="#1E293B"
-                        app:cornerRadius="10dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnDelayPlus"
-                        android:layout_width="48dp"
-                        android:layout_height="44dp"
-                        android:layout_marginStart="8dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:padding="0dp"
-                        android:text="+"
-                        android:textColor="#FFFFFF"
-                        android:textSize="18sp"
-                        app:backgroundTint="#1E293B"
-                        app:cornerRadius="10dp" />
-                </LinearLayout>
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- CARD 3: WIDGET E PREFERÊNCIAS -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="#131C2E"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="#1E293B"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="18dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="3. Tela Inicial e Voz"
+                    android:text="2. Atalho e Preferências"
                     android:textColor="#F8FAFC"
                     android:textSize="17sp"
                     android:textStyle="bold" />
@@ -266,6 +149,52 @@
                     android:text="Avisar por voz quando estiver abrindo"
                     android:textColor="#E2E8F0"
                     android:textSize="15sp" />
+
+                <!-- Tempo de conexão do modo Live antes de enviar o comando da câmera -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvDelayLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Aguardar conexão do Live: 2.5s"
+                        android:textColor="#94A3B8"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDelayMinus"
+                        android:layout_width="46dp"
+                        android:layout_height="42dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:padding="0dp"
+                        android:text="−"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        app:backgroundTint="#1E293B"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDelayPlus"
+                        android:layout_width="46dp"
+                        android:layout_height="42dp"
+                        android:layout_marginStart="8dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:padding="0dp"
+                        android:text="+"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        app:backgroundTint="#1E293B"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

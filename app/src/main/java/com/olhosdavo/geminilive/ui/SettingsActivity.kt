@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -19,15 +18,13 @@ import com.olhosdavo.geminilive.service.GeminiLiveAccessibilityService
 import java.util.Locale
 
 /**
- * Painel de Configuração com Calibrador Visual Flutuante (Alvos 1 e 2) e Design Material 3.
+ * Painel de Configuração com Design Material 3 e Acionamento por Comando Virtual.
  */
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var prefs: PrefsManager
     private lateinit var tvServiceStatus: TextView
-    private lateinit var tvCalibrationStatus: TextView
     private lateinit var tvDelayLabel: TextView
-    private lateinit var btnResetCalibration: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,13 +33,10 @@ class SettingsActivity : AppCompatActivity() {
         prefs = PrefsManager(this)
 
         tvServiceStatus = findViewById(R.id.tvServiceStatus)
-        tvCalibrationStatus = findViewById(R.id.tvCalibrationStatus)
         tvDelayLabel = findViewById(R.id.tvDelayLabel)
-        btnResetCalibration = findViewById(R.id.btnResetCalibration)
 
         val btnOpenAccessibility = findViewById<Button>(R.id.btnOpenAccessibility)
         val btnOpenAppDetails = findViewById<Button>(R.id.btnOpenAppDetails)
-        val btnVisualCalibrate = findViewById<Button>(R.id.btnVisualCalibrate)
         val btnDelayMinus = findViewById<Button>(R.id.btnDelayMinus)
         val btnDelayPlus = findViewById<Button>(R.id.btnDelayPlus)
         val btnPinWidget = findViewById<Button>(R.id.btnPinWidget)
@@ -67,34 +61,6 @@ class SettingsActivity : AppCompatActivity() {
                 data = Uri.fromParts("package", packageName, null)
             }
             startActivity(intent)
-        }
-
-        // Abre os 2 alvos flutuantes sobre o Gemini para calibrar arrastando com o dedo!
-        btnVisualCalibrate.setOnClickListener {
-            val service = GeminiLiveAccessibilityService.instance
-            if (!GeminiLiveAccessibilityService.isServiceEnabled(this) || service == null) {
-                Toast.makeText(
-                    this,
-                    "Ative primeiro o Serviço de Acessibilidade no Card 1!",
-                    Toast.LENGTH_LONG
-                ).show()
-                return@setOnClickListener
-            }
-            service.startVisualCalibrationMode()
-        }
-
-        btnResetCalibration.setOnClickListener {
-            prefs.hasVisualCalibration = false
-            prefs.liveButtonXPx = -1
-            prefs.liveButtonYPx = -1
-            prefs.cameraButtonXPx = -1
-            prefs.cameraButtonYPx = -1
-            updateStatusLabels()
-            Toast.makeText(
-                this,
-                "Calibração resetada para o modo Automático.",
-                Toast.LENGTH_SHORT
-            ).show()
         }
 
         btnDelayMinus.setOnClickListener {
@@ -162,20 +128,10 @@ class SettingsActivity : AppCompatActivity() {
             tvServiceStatus.setTextColor(Color.parseColor("#F87171"))
         }
 
-        if (prefs.hasVisualCalibration && prefs.cameraButtonXPx > 0) {
-            tvCalibrationStatus.text = "✅ Calibrado na tela: Alvo 1 (${prefs.liveButtonXPx}, ${prefs.liveButtonYPx}) • Alvo 2 (${prefs.cameraButtonXPx}, ${prefs.cameraButtonYPx})"
-            tvCalibrationStatus.setTextColor(Color.parseColor("#4ADE80"))
-            btnResetCalibration.visibility = View.VISIBLE
-        } else {
-            tvCalibrationStatus.text = "Modo atual: Detecção Automática dos botões"
-            tvCalibrationStatus.setTextColor(Color.parseColor("#38BDF8"))
-            btnResetCalibration.visibility = View.GONE
-        }
-
         val seconds = prefs.cameraDelayTenths / 10.0
         tvDelayLabel.text = String.format(
             Locale.getDefault(),
-            "Espera para clicar na câmera: %.1fs",
+            "Aguardar conexão do Live: %.1fs",
             seconds
         )
     }

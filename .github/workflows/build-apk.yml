@@ -30,24 +30,22 @@ jobs:
       - name: Compilar APK
         run: |
           gradle assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.4.apk
+          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.5.apk
 
       - name: Disponibilizar APK nos Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OlhosDaVo-APK
-          path: OlhosDaVo-v1.4.apk
+          path: OlhosDaVo-v1.5.apk
 
       - name: Publicar APK na aba Releases (Download direto no celular)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.${{ github.run_number }}
-          name: "Olhos da Vó v1.4 - Nova UI + Calibrador Visual Flutuante (Build #${{ github.run_number }})"
+          tag_name: v1.5.${{ github.run_number }}
+          name: "Olhos da Vó v1.5 - Comando Virtual Direto + Nova UI (Build #${{ github.run_number }})"
           body: |
-            ### 📱 Download Direto para o Celular (`OlhosDaVo-v1.4.apk`)
-            Toque em **`OlhosDaVo-v1.4.apk`** abaixo em **Assets** para baixar e instalar.
-            - **🎯 Calibrador Visual de Alvos na Tela:** Chega de barrinhas de porcentagem! Toque em **"Posicionar Alvos (1) e (2) na Tela"**, arraste a bolinha `(1)` para cima do botão Live e a bolinha `(2)` para cima do botão Câmera e salve!
-            - **🎨 Nova Interface Material 3:** Visual moderno em azul noturno e dourado, com ícone redesenhado e cards limpos.
-            - **📷 Correção do Clique Único:** Garante 1 único toque na câmera para nunca abrir e fechar em seguida.
-          files: OlhosDaVo-v1.4.apk
+            ### 📱 Download Direto para o Celular (`OlhosDaVo-v1.5.apk`)
+            Toque em **`OlhosDaVo-v1.5.apk`** abaixo em **Assets** para baixar e instalar.
+            - **⚡ 100% Comando Virtual (`ACTION_CLICK`):** Localiza o objeto virtual do botão Live e o objeto virtual do botão Câmera na barra inferior do Gemini Live e envia 1 único comando virtual (sem precisar calibrar coordenadas na tela e sem abrir/fechar a câmera).
+          files: OlhosDaVo-v1.5.apk
           prerelease: false

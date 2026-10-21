@@ -1,10 +1,8 @@
 package com.olhosdavo.geminilive.service
 
 import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.GestureDescription
 import android.content.ComponentName
 import android.content.Context
-import android.graphics.Path
 import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
@@ -12,19 +10,18 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.Toast
 import com.olhosdavo.geminilive.data.PrefsManager
-import com.olhosdavo.geminilive.util.CalibrationOverlayManager
 import com.olhosdavo.geminilive.util.FeedbackHelper
 import com.olhosdavo.geminilive.util.GeminiLauncher
 import java.text.Normalizer
 import java.util.Locale
 
 /**
- * Serviço de Acessibilidade que automatiza a abertura do Gemini Live com Câmera:
- * - Etapa 1 (STEP_1_OPEN_LIVE): Clica 1 vez no botão Live.
- * - Etapa 2 (STEP_2_OPEN_CAMERA): Aguarda o modo Live abrir e clica EXATAMENTE 1 VEZ no botão Câmera,
- *   encerrando imediatamente para nunca desligar a câmera com um segundo clique.
+ * Serviço de Acessibilidade que aciona os botões do Gemini por COMANDO VIRTUAL (ACTION_CLICK):
+ * - Etapa 1 (STEP_1_OPEN_LIVE): Localiza o objeto virtual do botão "Live" e envia ACTION_CLICK.
+ * - Etapa 2 (STEP_2_OPEN_CAMERA): Aguarda a tela do Gemini Live carregar, localiza o objeto virtual
+ *   do botão "Câmera" (por nome/ID ou pelo 1º botão virtual da barra inferior do Live) e envia
+ *   EXATAMENTE 1 comando ACTION_CLICK, encerrando imediatamente para nunca fechar a câmera.
  */
 class GeminiLiveAccessibilityService : AccessibilityService() {
 
@@ -36,18 +33,18 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
 
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var prefs: PrefsManager
-    private var calibrationOverlay: CalibrationOverlayManager? = null
 
     private var currentPhase: Phase = Phase.IDLE
     private var sessionStartTime: Long = 0L
     private var liveClickedTime: Long = 0L
-    private var liveScreenConfirmedTime: Long = 0L
+    private var liveRetryCount: Int = 0
 
     private val pollRunnable = object : Runnable {
         override fun run() {
             if (currentPhase == Phase.IDLE) return
 
             val now = System.currentTimeMillis()
+            // Timeout total de segurança de 18 segundos
             if (now - sessionStartTime > 18_000L) {
                 stopAutomation()
                 return
@@ -56,7 +53,7 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             processCurrentStep(now)
 
             if (currentPhase != Phase.IDLE) {
-                handler.postDelayed(this, 350L)
+                handler.postDelayed(this, 300L)
             }
         }
     }
@@ -77,7 +74,6 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
-        calibrationOverlay?.hide()
         stopAutomation()
         if (instance === this) {
             instance = null
@@ -85,37 +81,18 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
-    /**
-     * Abre o aplicativo do Gemini e exibe os 2 alvos flutuantes arrastáveis (1-LIVE e 2-CÂMERA)
-     * para o familiar posicionar visualmente na tela.
-     */
-    fun startVisualCalibrationMode() {
-        stopAutomation()
-        prefs = PrefsManager(this)
-        if (calibrationOverlay == null) {
-            calibrationOverlay = CalibrationOverlayManager(this, prefs) { x, y ->
-                tapCoordinates(x, y)
-            }
-        }
-        GeminiLauncher.launchOfficialGemini(this)
-        handler.postDelayed({
-            calibrationOverlay?.show()
-        }, 650L)
-    }
-
     fun startAutomationSession() {
-        calibrationOverlay?.hide()
         prefs = PrefsManager(this)
         handler.removeCallbacks(pollRunnable)
 
         currentPhase = Phase.STEP_1_OPEN_LIVE
         sessionStartTime = System.currentTimeMillis()
         liveClickedTime = 0L
-        liveScreenConfirmedTime = 0L
+        liveRetryCount = 0
 
         GeminiLauncher.launchOfficialGemini(this)
 
-        handler.postDelayed(pollRunnable, 800L)
+        handler.postDelayed(pollRunnable, 700L)
     }
 
     private fun stopAutomation() {
@@ -129,20 +106,14 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
 
         when (currentPhase) {
             Phase.STEP_1_OPEN_LIVE -> {
-                // 1) Verifica se JÁ estamos dentro da tela do Gemini Live
+                // 1) Se já estiver na tela do Gemini Live, avança direto para a Etapa 2
                 if (isAlreadyInsideGeminiLive(rootNodes)) {
-                    transitionToStep2(now, alreadyConfirmed = true)
+                    currentPhase = Phase.STEP_2_OPEN_CAMERA
+                    liveClickedTime = now - 1000L
                     return
                 }
 
-                // 2) Se o familiar calibrou visualmente o Alvo 1 na tela, toca 1 única vez no Alvo 1 após 1.6s
-                if (prefs.hasVisualCalibration && prefs.liveButtonXPx > 0 && (now - sessionStartTime) >= 1600L) {
-                    tapCoordinates(prefs.liveButtonXPx.toFloat(), prefs.liveButtonYPx.toFloat())
-                    transitionToStep2(now, alreadyConfirmed = false)
-                    return
-                }
-
-                // 3) Procura o botão "Live" / "Conversar no Live" na janela do Gemini
+                // 2) Localiza o botão virtual "Live" na árvore do Gemini e envia ACTION_CLICK
                 val liveNode = findBestMatchingNode(
                     roots = rootNodes,
                     keywords = LIVE_BUTTON_KEYWORDS,
@@ -150,21 +121,14 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
                     requireBottomHalf = false
                 )
 
-                if (liveNode != null) {
-                    clickOnce(liveNode)
-                    transitionToStep2(now, alreadyConfirmed = false)
-                    return
-                }
-
-                // 4) Fallback se após 2.4 segundos o botão Live não foi achado por texto
-                if ((now - sessionStartTime) >= 2400L) {
-                    tapSavedLivePosition()
-                    transitionToStep2(now, alreadyConfirmed = false)
+                if (liveNode != null && performVirtualClick(liveNode)) {
+                    currentPhase = Phase.STEP_2_OPEN_CAMERA
+                    liveClickedTime = now
                 }
             }
 
             Phase.STEP_2_OPEN_CAMERA -> {
-                // Se a câmera já estiver ligada, vibra e encerra imediatamente
+                // 1) Se a câmera já estiver ligada, confirma com vibração e encerra
                 val alreadyOnNode = findBestMatchingNode(
                     roots = rootNodes,
                     keywords = CAMERA_ALREADY_ON_KEYWORDS,
@@ -177,28 +141,30 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
                     return
                 }
 
-                if (liveScreenConfirmedTime == 0L && isAlreadyInsideGeminiLive(rootNodes)) {
-                    liveScreenConfirmedTime = now
-                }
-
-                val elapsedSinceLive = now - liveClickedTime
-                // Aguarda o Gemini Live abrir e conectar antes de dar o clique único na câmera
-                val requiredWait = if (liveScreenConfirmedTime > 0L) {
-                    maxOf(1800L, prefs.cameraDelayMs - 600L)
-                } else {
-                    prefs.cameraDelayMs
-                }
-                if (elapsedSinceLive < requiredWait) return
-
-                // 1) Se o familiar calibrou visualmente o Alvo 2 na tela, dá 1 ÚNICO TOQUE no Alvo 2 e encerra!
-                if (prefs.hasVisualCalibration && prefs.cameraButtonXPx > 0) {
-                    tapCoordinates(prefs.cameraButtonXPx.toFloat(), prefs.cameraButtonYPx.toFloat())
-                    FeedbackHelper.vibrateCameraReady(this)
-                    stopAutomation()
+                // 2) Se após 2.2s ainda estiver na tela inicial de texto do Gemini (porque o app ainda
+                // estava carregando no 1º clique), envia o comando virtual no botão Live novamente
+                if (isStillOnGeminiMainChatScreen(rootNodes)) {
+                    if ((now - liveClickedTime) >= 2200L && liveRetryCount < 3) {
+                        val liveNodeRetry = findBestMatchingNode(
+                            roots = rootNodes,
+                            keywords = LIVE_BUTTON_KEYWORDS,
+                            excludeKeywords = emptyList(),
+                            requireBottomHalf = false
+                        )
+                        if (liveNodeRetry != null && performVirtualClick(liveNodeRetry)) {
+                            liveRetryCount++
+                            liveClickedTime = now
+                        }
+                    }
+                    // Nunca tenta clicar na câmera enquanto ainda estiver na tela de chat inicial!
                     return
                 }
 
-                // 2) Procura o botão de ligar a Câmera na metade inferior da tela do Gemini Live
+                // 3) Aguarda o Gemini Live abrir e conectar (padrão 2.5s após entrar no Live)
+                val elapsedSinceLive = now - liveClickedTime
+                if (elapsedSinceLive < prefs.cameraDelayMs) return
+
+                // 4) Camada 1: Procura o botão virtual da Câmera na barra inferior do Gemini Live por nome/ID
                 val cameraNode = findBestMatchingNode(
                     roots = rootNodes,
                     keywords = CAMERA_BUTTON_KEYWORDS,
@@ -206,37 +172,43 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
                     requireBottomHalf = true
                 )
 
-                if (cameraNode != null) {
-                    clickOnce(cameraNode)
+                if (cameraNode != null && performVirtualClick(cameraNode)) {
                     FeedbackHelper.vibrateCameraReady(this)
+                    // Encerra IMEDIATAMENTE após 1 único comando virtual para nunca desligar a câmera!
                     stopAutomation()
                     return
                 }
 
-                // 3) Verifica a altura Y dos outros botões da barra inferior do Live ("Compartilhar tela" / "Pausar")
-                val siblingBarY = findLiveBottomBarCenterY(rootNodes)
-                if (siblingBarY != null) {
-                    val x = resources.displayMetrics.widthPixels * (prefs.cameraButtonXPercent / 100f)
-                    tapCoordinates(x, siblingBarY.toFloat())
+                // 5) Camada 2: Se o botão da câmera não tiver texto compatível no aparelho,
+                // pega o 1º botão virtual clicável à esquerda na barra inferior do Gemini Live e envia ACTION_CLICK
+                val leftmostBottomButtonNode = findLeftmostLiveBottomBarNode(rootNodes)
+                if (leftmostBottomButtonNode != null && performVirtualClick(leftmostBottomButtonNode)) {
                     FeedbackHelper.vibrateCameraReady(this)
                     stopAutomation()
-                    return
                 }
-
-                // 4) Fallback final (1 único toque na posição salva e encerra!)
-                tapSavedCameraPosition()
-                FeedbackHelper.vibrateCameraReady(this)
-                stopAutomation()
             }
 
             Phase.IDLE -> Unit
         }
     }
 
-    private fun transitionToStep2(now: Long, alreadyConfirmed: Boolean) {
-        currentPhase = Phase.STEP_2_OPEN_CAMERA
-        liveClickedTime = now
-        liveScreenConfirmedTime = if (alreadyConfirmed) now else 0L
+    /**
+     * Envia o comando virtual nativo do Android (ACTION_CLICK) diretamente para o componente
+     * de interface (ou seu container clicável), sem usar toque cego na tela e sem clicar duas vezes.
+     */
+    private fun performVirtualClick(node: AccessibilityNodeInfo): Boolean {
+        var current: AccessibilityNodeInfo? = node
+        var depth = 0
+        while (current != null && depth < 6) {
+            if (current.isClickable && current.isEnabled) {
+                if (current.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                    return true
+                }
+            }
+            current = current.parent
+            depth++
+        }
+        return node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
     }
 
     private fun getExternalAppRootNodes(): List<AccessibilityNodeInfo> {
@@ -283,26 +255,24 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
             "share screen",
             "encerrar modo live",
             "sair do modo live",
-            "end live"
+            "end live",
+            "pausar live",
+            "hold live"
         )
         return findBestMatchingNode(roots, liveScreenIndicators, emptyList(), false) != null
     }
 
-    private fun findLiveBottomBarCenterY(roots: List<AccessibilityNodeInfo>): Int? {
-        val bottomBarSiblingKeywords = listOf(
-            "compartilhar tela",
-            "share screen",
-            "pausar",
-            "hold",
-            "pause",
-            "encerrar",
-            "end"
+    private fun isStillOnGeminiMainChatScreen(roots: List<AccessibilityNodeInfo>): Boolean {
+        if (isAlreadyInsideGeminiLive(roots)) return false
+        val mainChatIndicators = listOf(
+            "peca ao gemini",
+            "pergunte ao gemini",
+            "ask gemini",
+            "conversar no live",
+            "entrar no modo live",
+            "use gemini live"
         )
-        val sibling = findBestMatchingNode(roots, bottomBarSiblingKeywords, emptyList(), true)
-            ?: return null
-        val rect = Rect()
-        sibling.getBoundsInScreen(rect)
-        return if (!rect.isEmpty && rect.centerY() > 0) rect.centerY() else null
+        return findBestMatchingNode(roots, mainChatIndicators, emptyList(), false) != null
     }
 
     private fun findBestMatchingNode(
@@ -368,67 +338,51 @@ class GeminiLiveAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Dá EXATAMENTE 1 CLIQUE (nunca duplica o toque para não ligar e desligar a câmera em seguida).
+     * Localiza o objeto AccessibilityNodeInfo clicável mais à esquerda na barra de controles
+     * inferior do Gemini Live ([Câmera] [Compartilhar Tela] [Pausar] [Encerrar]).
      */
-    private fun clickOnce(node: AccessibilityNodeInfo) {
-        val rect = Rect()
-        node.getBoundsInScreen(rect)
+    private fun findLeftmostLiveBottomBarNode(roots: List<AccessibilityNodeInfo>): AccessibilityNodeInfo? {
+        val screenHeight = resources.displayMetrics.heightPixels
+        val screenWidth = resources.displayMetrics.widthPixels
+        val minY = (screenHeight * 0.65f).toInt()
+        val maxY = (screenHeight * 0.96f).toInt()
 
-        var current: AccessibilityNodeInfo? = node
-        var depth = 0
-        while (current != null && depth < 6) {
-            if (current.isClickable) {
-                val cRect = Rect()
-                current.getBoundsInScreen(cRect)
-                if (!cRect.isEmpty && cRect.width() < resources.displayMetrics.widthPixels * 0.8f) {
-                    rect.set(cRect)
-                }
-                if (current.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                    return
-                }
-                break
+        val candidates = mutableListOf<Pair<AccessibilityNodeInfo, Rect>>()
+        for (root in roots) {
+            collectBottomClickableNodes(root, minY, maxY, screenWidth, candidates)
+        }
+
+        if (candidates.size >= 3) {
+            return candidates.minByOrNull { it.second.centerX() }?.first
+        }
+        return null
+    }
+
+    private fun collectBottomClickableNodes(
+        node: AccessibilityNodeInfo?,
+        minY: Int,
+        maxY: Int,
+        screenWidth: Int,
+        outCandidates: MutableList<Pair<AccessibilityNodeInfo, Rect>>
+    ) {
+        if (node == null || !node.isVisibleToUser) return
+
+        if (node.isClickable && node.isEnabled) {
+            val rect = Rect()
+            node.getBoundsInScreen(rect)
+            val width = rect.width()
+            val height = rect.height()
+            if (rect.centerY() in minY..maxY &&
+                width in 36..(screenWidth / 2) &&
+                height in 36..380
+            ) {
+                outCandidates.add(node to rect)
             }
-            current = current.parent
-            depth++
         }
 
-        if (!rect.isEmpty && rect.centerX() > 0 && rect.centerY() > 0) {
-            tapCoordinates(rect.centerX().toFloat(), rect.centerY().toFloat())
+        for (i in 0 until node.childCount) {
+            collectBottomClickableNodes(node.getChild(i), minY, maxY, screenWidth, outCandidates)
         }
-    }
-
-    private fun tapSavedLivePosition() {
-        if (prefs.liveButtonXPx > 0 && prefs.liveButtonYPx > 0) {
-            tapCoordinates(prefs.liveButtonXPx.toFloat(), prefs.liveButtonYPx.toFloat())
-        } else {
-            tapScreenPercent(prefs.liveButtonXPercent, prefs.liveButtonYPercent)
-        }
-    }
-
-    private fun tapSavedCameraPosition() {
-        if (prefs.cameraButtonXPx > 0 && prefs.cameraButtonYPx > 0) {
-            tapCoordinates(prefs.cameraButtonXPx.toFloat(), prefs.cameraButtonYPx.toFloat())
-        } else {
-            tapScreenPercent(prefs.cameraButtonXPercent, prefs.cameraButtonYPercent)
-        }
-    }
-
-    private fun tapScreenPercent(xPercent: Int, yPercent: Int) {
-        val metrics = resources.displayMetrics
-        val x = (metrics.widthPixels * (xPercent.coerceIn(1, 99) / 100f))
-        val y = (metrics.heightPixels * (yPercent.coerceIn(1, 99) / 100f))
-        tapCoordinates(x, y)
-    }
-
-    private fun tapCoordinates(x: Float, y: Float) {
-        val path = Path().apply {
-            moveTo(x, y)
-        }
-        val stroke = GestureDescription.StrokeDescription(path, 0L, 100L)
-        val gesture = GestureDescription.Builder()
-            .addStroke(stroke)
-            .build()
-        dispatchGesture(gesture, null, null)
     }
 
     private fun normalizeText(input: String?): String {
