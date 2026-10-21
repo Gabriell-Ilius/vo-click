@@ -30,22 +30,22 @@ jobs:
       - name: Compilar APK
         run: |
           gradle assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.8.apk
+          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.9.apk
 
       - name: Disponibilizar APK nos Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OlhosDaVo-APK
-          path: OlhosDaVo-v1.8.apk
+          path: OlhosDaVo-v1.9.apk
 
       - name: Publicar APK na aba Releases (Download direto no celular)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.8.${{ github.run_number }}
-          name: "Olhos da Vó v1.8 - Controle de Tempo dos Cliques 1 e 2 (Build #${{ github.run_number }})"
+          tag_name: v1.9.${{ github.run_number }}
+          name: "Olhos da Vó v1.9 - Fecha Sessão Anterior do Gemini Automaticamente (Build #${{ github.run_number }})"
           body: |
-            ### 📱 Download Direto para o Celular (`OlhosDaVo-v1.8.apk`)
-            Toque em **`OlhosDaVo-v1.8.apk`** abaixo em **Assets** para baixar e atualizar.
-            - **⏱️ Tempos Mais Calmos por Padrão (3.0s e 5.5s):** Ignora o tempo antigo de 2.2s que tinha ficado salvo na memória do celular e permite ajustar separadamente a **Espera até o Clique 1 (Live)** e a **Espera até o Clique 2 (Câmera)** com botões `−` e `+`.
-          files: OlhosDaVo-v1.8.apk
+            ### 📱 Download Direto para o Celular (`OlhosDaVo-v1.9.apk`)
+            Toque em **`OlhosDaVo-v1.9.apk`** abaixo em **Assets** para baixar e atualizar.
+            - **🔄 Reinício Limpo se o Gemini já estiver aberto:** Antes de fazer os cliques, encerra processos anteriores do Gemini (`FLAG_ACTIVITY_CLEAR_TASK` + `killBackgroundProcesses`), confere se o Gemini Live já estava aberto na tela, fecha a sessão anterior e reabre o Gemini do zero antes de dar o Clique 1 e o Clique 2!
+          files: OlhosDaVo-v1.9.apk
           prerelease: false

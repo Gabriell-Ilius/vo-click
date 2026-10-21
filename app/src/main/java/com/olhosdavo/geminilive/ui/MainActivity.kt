@@ -82,6 +82,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        // Se a rotina já está rodando (ex: fechando o Gemini aberto para reiniciar), não interrompe
+        if (GeminiLiveAccessibilityService.instance?.isAutomationRunning == true) {
+            return
+        }
+
         // Se o modo "0 cliques" (Iniciar direto ao abrir o ícone) estiver ativo
         val now = System.currentTimeMillis()
         if (enabled && prefs.autoLaunchOnOpen && (now - lastTriggerTime > 6000L)) {

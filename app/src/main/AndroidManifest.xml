@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
 
     <!-- Necessário no Android 11+ para abrir o app oficial do Gemini e usar voz (TTS) -->
     <queries>
@@ -38,7 +39,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Tela de Configurações para a Família (protegida por toque longo) -->
+        <!-- Tela de Configurações para a Família -->
         <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"

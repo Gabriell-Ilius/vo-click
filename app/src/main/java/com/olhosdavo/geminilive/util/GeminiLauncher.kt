@@ -1,17 +1,27 @@
 package com.olhosdavo.geminilive.util
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 
 /**
- * Responsável por abrir o aplicativo oficial do Google Gemini no Android,
- * tentando diferentes pacotes/intents oficiais em ordem de prioridade.
+ * Responsável por encerrar processos anteriores do Gemini em segundo plano e abrir
+ * o aplicativo oficial do Google Gemini no Android.
  */
 object GeminiLauncher {
 
-    private const val PACKAGE_GEMINI = "com.google.android.apps.bard"
-    private const val PACKAGE_GOOGLE_APP = "com.google.android.googlequicksearchbox"
+    const val PACKAGE_GEMINI = "com.google.android.apps.bard"
+    const val PACKAGE_GOOGLE_APP = "com.google.android.googlequicksearchbox"
+
+    fun killGeminiBackgroundProcesses(context: Context) {
+        try {
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            am.killBackgroundProcesses(PACKAGE_GEMINI)
+            am.killBackgroundProcesses(PACKAGE_GOOGLE_APP)
+        } catch (_: Exception) {
+        }
+    }
 
     fun launchOfficialGemini(context: Context) {
         val pm = context.packageManager
