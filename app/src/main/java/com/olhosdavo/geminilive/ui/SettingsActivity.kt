@@ -1,5 +1,7 @@
 package com.olhosdavo.geminilive.ui
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -38,6 +40,7 @@ class SettingsActivity : AppCompatActivity() {
         tvCameraCoordsLabel = findViewById(R.id.tvCameraCoordsLabel)
         tvDelayLabel = findViewById(R.id.tvDelayLabel)
 
+        val btnPinWidget = findViewById<Button>(R.id.btnPinWidget)
         val btnOpenAccessibility = findViewById<Button>(R.id.btnOpenAccessibility)
         val btnOpenAppDetails = findViewById<Button>(R.id.btnOpenAppDetails)
         val cbAutoLaunchOnOpen = findViewById<CheckBox>(R.id.cbAutoLaunchOnOpen)
@@ -64,6 +67,21 @@ class SettingsActivity : AppCompatActivity() {
         sbCameraDelay.progress = prefs.cameraDelayTenths
 
         updateLabels()
+
+        // Fixa o Widget 2x2 diretamente na Tela Inicial com 1 clique
+        btnPinWidget.setOnClickListener {
+            val appWidgetManager = AppWidgetManager.getInstance(this)
+            val myProvider = ComponentName(this, OlhosDaVoWidgetProvider::class.java)
+            if (appWidgetManager.isRequestPinAppWidgetSupported) {
+                appWidgetManager.requestPinAppWidget(myProvider, null, null)
+            } else {
+                Toast.makeText(
+                    this,
+                    "Segure o dedo na tela inicial e escolha Widgets -> Olhos da Vó",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
 
         btnOpenAccessibility.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))

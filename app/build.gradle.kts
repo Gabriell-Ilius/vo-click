@@ -11,8 +11,8 @@ android {
         applicationId = "com.olhosdavo.geminilive"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.2"
     }
 
     buildTypes {
@@ -22,7 +22,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Assina com a chave debug por padrão para facilitar instalação direta no celular da avó
             signingConfig = signingConfigs.getByName("debug")
         }
     }

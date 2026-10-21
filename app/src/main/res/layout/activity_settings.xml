@@ -14,9 +14,9 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Configurações da Família"
+            android:text="Configurações da Família (v1.2)"
             android:textColor="#FFD600"
-            android:textSize="26sp"
+            android:textSize="25sp"
             android:textStyle="bold" />
 
         <TextView
@@ -27,11 +27,24 @@
             android:textColor="#CCCCCC"
             android:textSize="15sp" />
 
+        <!-- BOTÃO DE 1 CLIQUE PARA ADICIONAR O WIDGET 2x2 NA TELA INICIAL -->
+        <Button
+            android:id="@+id/btnPinWidget"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#FFD600"
+            android:padding="14dp"
+            android:text="📌 COLOCAR WIDGET GRANDE (2x2) NA TELA INICIAL"
+            android:textColor="#000000"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
         <!-- PASSO 1: SERVIÇO DE ACESSIBILIDADE -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="16dp"
             android:background="#1E1E1E"
             android:orientation="vertical"
             android:padding="16dp">
@@ -146,7 +159,7 @@
                 android:textColor="#FFFFFF"
                 android:textSize="15sp" />
 
-            <!-- Posição do Botão LIVE (Padrão: canto inferior direito da barra do Gemini: X=88%, Y=91%) -->
+            <!-- Posição do Botão LIVE -->
             <TextView
                 android:id="@+id/tvLiveCoordsLabel"
                 android:layout_width="match_parent"
@@ -170,7 +183,7 @@
                 android:max="100"
                 android:progress="91" />
 
-            <!-- Posição do Botão CÂMERA dentro do Live (Padrão: botão esquerdo/central na barra do Live: X=22%, Y=89%) -->
+            <!-- Posição do Botão CÂMERA dentro do Live -->
             <TextView
                 android:id="@+id/tvCameraCoordsLabel"
                 android:layout_width="match_parent"
