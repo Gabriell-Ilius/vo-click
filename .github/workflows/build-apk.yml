@@ -30,22 +30,22 @@ jobs:
       - name: Compilar APK
         run: |
           gradle assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.2.apk
+          cp app/build/outputs/apk/debug/app-debug.apk OlhosDaVo-v1.3.apk
 
       - name: Disponibilizar APK nos Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OlhosDaVo-APK
-          path: OlhosDaVo-v1.2.apk
+          path: OlhosDaVo-v1.3.apk
 
       - name: Publicar APK na aba Releases (Download direto no celular)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2.${{ github.run_number }}
-          name: "Olhos da Vó v1.2 - Com Widget Grande 2x2 (Build #${{ github.run_number }})"
+          tag_name: v1.3.${{ github.run_number }}
+          name: "Olhos da Vó v1.3 - Correção Câmera + Widget 2x2 (Build #${{ github.run_number }})"
           body: |
-            ### 📱 Download Direto para o Celular (v1.2 com Widget 2x2)
-            Toque no arquivo **`OlhosDaVo-v1.2.apk`** abaixo em **Assets** para baixar e atualizar.
-            Depois, abra as **Configurações da Família** dentro do app e toque no botão amarelo **"📌 COLOCAR WIDGET GRANDE (2x2) NA TELA INICIAL"**.
-          files: OlhosDaVo-v1.2.apk
+            ### 📱 Download Direto para o Celular (v1.3)
+            Toque no arquivo **`OlhosDaVo-v1.3.apk`** abaixo em **Assets** para baixar e instalar.
+            - **Correção para o celular da avó:** Ignora janelas de sistema/launcher durante o carregamento, detecta a altura exata da barra inferior do Gemini Live (mesmo em celulares com barra de 3 botões `◀ ● ■`) e adiciona o botão de fixar o Widget 2x2 na tela inicial.
+          files: OlhosDaVo-v1.3.apk
           prerelease: false
